@@ -47,7 +47,8 @@ sigma_v = 1 # noice variance
 
 batch_s = 64
 num_sens = 10
-num_samples = batch_s*10
+samples_factor = 10
+num_samples = batch_s*samples_factor
 
 sen_loc = size_area*(np.random.rand(num_sens, 2)-0.5)
 pri_loc = size_area*(np.random.rand(1, 2)-0.5) #placing sensing entities and primary user randomly
@@ -217,7 +218,7 @@ def choose_model(init_model, choice):
             model._name = 'Dropout_Model_Rl1'
  
     if choice == "dropout_Rl2":           
-            model.add(Dense(num_sens, kernel_initializer=initializer, activation='relu'))
+            model.add(Dense(kernel_initializer=initializer, activation='relu'))
             model.add(layers.Dropout(0.3))
             model.add(BatchNormalization())
             model.add(Dense(64, kernel_regularizer=regularizers.l2(0.0005), activation='relu'))
@@ -319,7 +320,7 @@ def loss_fn(snrs: np.ndarray, predicted) -> float:
   b=tf.linalg.matvec(b_2,b_3)
   b=tf.reduce_sum(tf.math.multiply(b_1,b))
   loss= -t/b
-  return loss 
+  return loss / batch_s
 
 def eval_metric(model, history: np.ndarray,
                 metric_name: str) -> np.ndarray:
@@ -505,12 +506,14 @@ def Compute_PdVSPf(model):
     for k in range(0,rounds):#Number of Monte Carlo Simulations
     
         snrs = np.array(ch_gen(num_samples))
+        snrs_trick = np.zeros((num_samples,num_sens))
+        snrs_trick[0,:] = snrs[k,:]
         signals = define_users_signals(snrs)
         energy = generate_energy(signals)#Energy of received signal over L samples
         val = 1-2*pf[m]
         thresh[m] = ((math.sqrt(2)*sp.erfinv(val))/ math.sqrt(num_samples))+1
-        weights = model.predict(snrs).transpose()
-        print("this is the famous shape", weights.shape)
+        weights = model.predict(snrs_trick).transpose()
+        print("this is the weights shape", weights.shape)
         weights = get_weights(weights)
         weights = [float(i)/sum(weights) for i in weights]
         print('weights',weights)
