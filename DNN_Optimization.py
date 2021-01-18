@@ -187,32 +187,40 @@ def choose_model(init_model, choice):
     model, initializer = init_model()
     
     if choice == "standard":            
-            model.add(Dense(num_sens, kernel_initializer=initializer, activation='relu'))
+            model.add(Dense(num_sens, kernel_initializer=initializer))
+            model.add(LeakyReLU(alpha=0.01))
             
             model.add(BatchNormalization())
-            model.add(Dense(64, activation='relu'))
+            model.add(Dense(64))
+            model.add(LeakyReLU(alpha=0.01))
             
             model.add(BatchNormalization())
-            model.add(Dense(32, activation='relu'))
+            model.add(Dense(32))
+            model.add(LeakyReLU(alpha=0.01))
             
             model.add(BatchNormalization())
-            model.add(Dense(16, activation='relu'))
+            model.add(Dense(16))
+            model.add(LeakyReLU(alpha=0.01))
             
             model.add(BatchNormalization())
             model.add(Dense(num_sens, activation='softmax',name='last_layer'))
             model._name = 'dropout'
             
     if choice == "dropout_Rl1":           
-            model.add(Dense(num_sens, kernel_initializer=initializer, activation='relu'))
+            model.add(Dense(num_sens, kernel_initializer=initializer))
+            model.add(LeakyReLU(alpha=0.01))
             model.add(layers.Dropout(0.3))
             model.add(BatchNormalization())
-            model.add(Dense(64, activation='relu'))
+            model.add(Dense(64, kernel_regularizer=regularizers.l1(0.0005)))
+            model.add(LeakyReLU(alpha=0.01))
             model.add(layers.Dropout(0.3))
             model.add(BatchNormalization())
-            model.add(Dense(32, activation='relu'))
+            model.add(Dense(32, kernel_regularizer=regularizers.l1(0.0005)))
+            model.add(LeakyReLU(alpha=0.01))
             model.add(layers.Dropout(0.3))
             model.add(BatchNormalization())
-            model.add(Dense(16, activation='relu'))
+            model.add(Dense(16, kernel_regularizer=regularizers.l1(0.0005)))
+            model.add(LeakyReLU(alpha=0.01))
             model.add(layers.Dropout(0.3))
             model.add(BatchNormalization())
             model.add(Dense(num_sens, activation='softmax',name='last_layer'))
@@ -239,16 +247,20 @@ def choose_model(init_model, choice):
             model._name = 'Dropout_Model_Rl2'            
             
     if choice == "linear":           
-            model.add(Dense(num_sens, kernel_initializer=initializer, activation='relu'))
+            model.add(Dense(num_sens, kernel_initializer=initializer))
+            model.add(LeakyReLU(alpha=0.01))
             model.add(layers.Dropout(0.2))
             model.add(BatchNormalization())
-            model.add(Dense(64, activation='relu'))
+            model.add(Dense(64))
+            model.add(LeakyReLU(alpha=0.01))
             model.add(layers.Dropout(0.2))
             model.add(BatchNormalization())
-            model.add(Dense(32, activation='relu'))
+            model.add(Dense(32))
+            model.add(LeakyReLU(alpha=0.01))
             model.add(layers.Dropout(0.2))
             model.add(BatchNormalization())
-            model.add(Dense(16, activation='relu'))
+            model.add(Dense(16))
+            model.add(LeakyReLU(alpha=0.01))
             model.add(layers.Dropout(0.2))
             model.add(BatchNormalization())
             model.add(Dense(num_sens, activation='linear',name='last_layer'))
