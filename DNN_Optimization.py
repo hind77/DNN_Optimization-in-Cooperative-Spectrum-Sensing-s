@@ -512,6 +512,12 @@ def get_weights(predictions):
         weights.append(abs(mean(predictions[i])))
     return weights
 
+def real(w1):
+  return w1.real
+
+def convert(lst): 
+    return [[el] for el in lst]
+
 def Compute_PdVSPf(model):
   '''
     Function to return the cooperative probability of detection 
@@ -531,6 +537,7 @@ def Compute_PdVSPf(model):
         thresh[m] = ((math.sqrt(2)*sp.erfinv(val))/ math.sqrt(num_samples))+1
         weights = model.predict(snrs_trick).transpose()
         print("this is the weights shape", weights.shape)
+        print("weights matrix sum = ", weights[0].sum())
         weights = get_weights(weights)
         weights = [float(i)/sum(weights) for i in weights]
         print('weights',weights)
@@ -544,7 +551,33 @@ def Compute_PdVSPf(model):
     
   return cooperative_pds
 
-
+def weights_from_mathematical_model(snrs):
+    identity = np.identity(snrs.shape[1])
+    print("identity shape", identity.shape)
+    diagonal = np.diag(snrs)
+    print("diagonal shape", diagonal.shape)
+    D = np.sqrt((num_samples*identity)+diagonal)
+    print("D shape", D.shape)
+    D_inv = np.linalg.inv(D)
+    print("D_inv shape", D_inv.shape)
+    t1 = np.dot(D_inv,snrs)
+    t2 = np.dot(snrs.transpose(),D_inv)
+    mat = np.dot(t1,t2)
+    v, vects = np.linalg.eig(mat)
+    maxcol = list(v).index(max(v))
+    q_zero = vects[:,maxcol]
+    norm = np.linalg.norm(D_inv*q_zero, ord=2)
+    w1 = np.diag(D_inv*q_zero/norm)
+    w1_zero = np.sign(snrs.transpose()*w1)*w1
+    w1 = real(w1)
+    w1 = convert(w1)
+    w1 = np.array(w1)
+    w1 = [float(i)/sum(w1) for i in w1]
+    
+    return w1
+    
+    
+    
 
 
 
@@ -552,14 +585,15 @@ def main():
     
     #snrs = np.array_split(np.array(ch_gen(num_samples)), 2)
     snrs = np.array(ch_gen(num_samples))
-    labels= np.zeros((num_samples,num_sens))
+    labels= np.zeros((num_sens))
     X_train, X_val, y_train, y_val = train_test_split(snrs, snrs, test_size=0.30)
     model = choose_model(get_model, "Dropout_Model_Rl2")
     history = train_model(model, X_train, X_val, y_train, y_val)
     eval_metric(model, history, "loss")
     cooperative_pds = Compute_PdVSPf(model)
     print("cooperative_pds",cooperative_pds)
-    
+    maths_weights = weights_from_mathematical_model(snrs)
+    print("this is the mathematical weights")
     # simulation plots
     
     plt.plot(pf,cooperative_pds)
