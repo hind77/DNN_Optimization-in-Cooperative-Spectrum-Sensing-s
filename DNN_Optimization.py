@@ -188,19 +188,19 @@ def choose_model(init_model, choice):
     
     if choice == "standard":            
             model.add(Dense(num_sens, kernel_initializer=initializer))
-            model.add(LeakyReLU(alpha=0.01))
+            model.add(LeakyReLU(alpha=0.05))
             
             model.add(BatchNormalization())
             model.add(Dense(64))
-            model.add(LeakyReLU(alpha=0.01))
+            model.add(LeakyReLU(alpha=0.05))
             
             model.add(BatchNormalization())
             model.add(Dense(32))
-            model.add(LeakyReLU(alpha=0.01))
+            model.add(LeakyReLU(alpha=0.05))
             
             model.add(BatchNormalization())
             model.add(Dense(16))
-            model.add(LeakyReLU(alpha=0.01))
+            model.add(LeakyReLU(alpha=0.05))
             
             model.add(BatchNormalization())
             model.add(Dense(num_sens, activation='softmax',name='last_layer'))
@@ -228,19 +228,19 @@ def choose_model(init_model, choice):
  
     if choice == "dropout_Rl2":           
             model.add(Dense(kernel_initializer=initializer))
-            model.add(LeakyReLU(alpha=0.01))
+            model.add(LeakyReLU(alpha=0.001))
             model.add(layers.Dropout(0.3))
             model.add(BatchNormalization())
-            model.add(Dense(64, kernel_regularizer=regularizers.l2(0.0005)))
-            model.add(LeakyReLU(alpha=0.01))
+            model.add(Dense(64))
+            model.add(LeakyReLU(alpha=0.001))
             model.add(layers.Dropout(0.3))
             model.add(BatchNormalization())
-            model.add(Dense(32, kernel_regularizer=regularizers.l2(0.0005)))
-            model.add(LeakyReLU(alpha=0.01))
+            model.add(Dense(32))
+            model.add(LeakyReLU(alpha=0.001))
             model.add(layers.Dropout(0.3))
             model.add(BatchNormalization())
-            model.add(Dense(16, kernel_regularizer=regularizers.l2(0.0005)))
-            model.add(LeakyReLU(alpha=0.01))
+            model.add(Dense(16))
+            model.add(LeakyReLU(alpha=0.001))
             model.add(layers.Dropout(0.3))
             model.add(BatchNormalization())
             model.add(Dense(num_sens, activation='softmax',name='last_layer'))
@@ -529,15 +529,17 @@ def Compute_PdVSPf(model):
     for k in range(0,rounds):#Number of Monte Carlo Simulations
     
         snrs = np.array(ch_gen(num_samples))
-        snrs_trick = np.zeros((num_samples,num_sens))
-        snrs_trick[0,:] = snrs[k,:]
+        #snrs_trick = np.zeros((num_samples,num_sens))
+        #snrs_trick[0,:] = snrs[k,:]
         signals = define_users_signals(snrs)
         energy = generate_energy(signals)#Energy of received signal over L samples
         val = 1-2*pf[m]
         thresh[m] = ((math.sqrt(2)*sp.erfinv(val))/ math.sqrt(num_samples))+1
-        weights = model.predict(snrs_trick).transpose()
+        weights = model.predict(snrs)
         print("this is the weights shape", weights.shape)
-        print("weights matrix sum = ", weights[0].sum())
+        print("this is the weights vector", weights)
+        print("the is any negative value?: ", weights.any()<0)
+        print("weights vector sum = ", weights[1].sum())
         weights = get_weights(weights)
         weights = [float(i)/sum(weights) for i in weights]
         print('weights',weights)
@@ -587,13 +589,13 @@ def main():
     snrs = np.array(ch_gen(num_samples))
     labels= np.zeros((num_sens))
     X_train, X_val, y_train, y_val = train_test_split(snrs, snrs, test_size=0.30)
-    model = choose_model(get_model, "Dropout_Model_Rl2")
+    model = choose_model(get_model, "standard")
     history = train_model(model, X_train, X_val, y_train, y_val)
     eval_metric(model, history, "loss")
     cooperative_pds = Compute_PdVSPf(model)
     print("cooperative_pds",cooperative_pds)
-    maths_weights = weights_from_mathematical_model(snrs)
-    print("this is the mathematical weights")
+    #maths_weights = weights_from_mathematical_model(snrs)
+    #print("this is the mathematical weights")
     # simulation plots
     
     plt.plot(pf,cooperative_pds)
