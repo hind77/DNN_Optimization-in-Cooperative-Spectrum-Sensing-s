@@ -487,11 +487,7 @@ def local_pd(decisions,pds):
   
   return pd
 
-def get_weights(predictions):
-    weights = list()
-    for i in range(0,len(predictions)):
-        weights.append(abs(mean(predictions[i])))
-    return weights
+
 
 def real(w1):
   return w1.real
@@ -509,16 +505,10 @@ def Compute_PdVSPf(model, snrs_test, signal_power):
     cooperative_decisions = list()
     for k in range(0,rounds):#Number of Monte Carlo Simulations
     
-        #snrs_trick = np.zeros((num_samples,num_sens))
-        #snrs_trick[0,:] = snrs[k,:]
         snrs = define_users_snrs(snrs_test[k])
         val = 1-2*pf[m]
         thresh[m] = ((math.sqrt(2)*sp.erfinv(val))/ math.sqrt(num_samples))+1
         weights = model.predict(snrs_test)
-        print("this is the weights shape", weights.shape)
-        print("this is the weights vector", weights)
-        print("the is any negative value?: ", weights.any()<0)
-        print("weights vector sum = ", weights[k].sum())
         weights = weights[k]
         print('weights',weights)
         print('weights sum',sum(weights)) 
@@ -534,29 +524,29 @@ def Compute_PdVSPf(model, snrs_test, signal_power):
     
   return cooperative_pds
 
-def old_paper_mathematical_weights(snrs,signal_power):
+def old_paper_mathematical_weights(snrs):
+    '''
+    Function to compute the weights from the mathematical formula in 2007 paper
+    
+    Parameters:
+        
+        snrs :  the row of  the sensing units snrs 
+        
+    Output:
+        mathematical weights
+    '''        
+    
     # search why I should make the transpose
     snrs = snrs.transpose()
-    print("this is the funny snrs",snrs)
     # identity using the snrs matrix from the old paper
     identity = np.identity(num_sens)
-    print("this is the identity", identity)
-    print("this is the snrs shape ", snrs.shape)
-    print("identity shape", identity.shape)
     diagonal = np.diag(snrs)
-    print("this the diagonal", diagonal)
-    print("diagonal shape", diagonal.shape)
     D = np.sqrt((num_samples*identity)+diagonal)
-    print("D shape", D.shape)
     D_inv = np.linalg.inv(D)
-    print("D_inv shape", D_inv.shape)
-    #t1 = np.dot(D_inv,snrs.transpose())
-    #t2 = np.dot(snrs,D_inv)
-    #mat = np.dot(t1,t2)
-    #print(" this is the mat matrix ", mat)
     mat = D_inv*snrs*snrs.transpose()*D_inv
-    print(" this is the mat matrix ", mat)
     v, vects = np.linalg.eig(mat)
+    print("this is the eigen values",v)
+    print("this is the eigen vector", vects)
     maxcol = list(v).index(max(v))
     q_zero = vects[:,maxcol]
     norm = np.linalg.norm(D_inv*q_zero, ord=2)
@@ -571,6 +561,18 @@ def old_paper_mathematical_weights(snrs,signal_power):
     return w1
     
 def new_paper_mathematical_weights(snrs, signal_power):
+    
+    '''
+    Function to compute the weights from the mathematical formula in 2016 paper
+    
+    Parameters:
+        
+        snrs :  the row of  the sensing units snrs 
+        signak_power: the power of the signal received by the sensing units
+        
+    Output:
+        mathematical weights
+    '''      
     
     C_inv = np.linalg.pinv(signal_power)
     
