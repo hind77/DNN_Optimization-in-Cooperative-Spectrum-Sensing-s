@@ -154,7 +154,7 @@ def ch_gen(num_samples: int) -> np.ndarray:
   
   """
 
-  returned_list = []
+  returned_power = []
   returned_SNRs = []
   
   
@@ -173,10 +173,13 @@ def ch_gen(num_samples: int) -> np.ndarray:
       SNR = pri_power * pow(abs(pu_ch_gain_tot),2)/ sigma_v
     multi_fading = get_multiPath_Fading(num_sens)
     pu_power = pu_power * multi_fading
-    returned_list.append(pu_power)
+    returned_power.append(pu_power)
     returned_SNRs.append(SNR)
+  output = dict()
+  output['snrs'] = returned_SNRs
+  output['power'] = returned_power
 
-  return returned_SNRs
+  return output
 
 
 def choose_model(init_model, choice):
@@ -420,42 +423,20 @@ def column(matrix, i):
     return [row[i] for row in matrix]
 
 
-def define_users_signals(snrs):
+def define_users_snrs(snrs):
     '''
     Function to return a dictionary that representes each user with its signal
     
     '''    
     signals = dict()
     for i in range(0,num_sens):
-        signals[i]= column(snrs, i)
+        signals[i]= snrs[i]
         
     return signals
 
-def generate_energy(signals):
 
-  '''
-    Function to return a dictionary that representes each user with its Energy
-    
-  '''       
-    
-  n = np.random.randn(1,num_samples)#AWGN noise with mean 0 and variance 1
-  energy = dict()
-  for k,v in signals.items():
-    y = list()
-    y = v + n
-    energy[k] = pow(abs(y),2)
-  return energy
 
-def generate_statistic_test(energy):
-    
-  '''
-    Function to return a dictionary that representes each user with its statistic test
-    
-  '''       
-  static = dict()
-  for k,v in energy.items():
-    static[k] = np.sum(v)*(1/num_samples)
-  return static
+
 def get_local_decisions(static,thresh,decisions):
     
   '''
@@ -518,7 +499,7 @@ def real(w1):
 def convert(lst): 
     return [[el] for el in lst]
 
-def Compute_PdVSPf(model):
+def Compute_PdVSPf(model, snrs_test, signal_power):
   '''
     Function to return the cooperative probability of detection 
     
@@ -528,56 +509,72 @@ def Compute_PdVSPf(model):
     cooperative_decisions = list()
     for k in range(0,rounds):#Number of Monte Carlo Simulations
     
-        snrs = np.array(ch_gen(num_samples))
         #snrs_trick = np.zeros((num_samples,num_sens))
         #snrs_trick[0,:] = snrs[k,:]
-        signals = define_users_signals(snrs)
-        energy = generate_energy(signals)#Energy of received signal over L samples
+        snrs = define_users_snrs(snrs_test[k])
         val = 1-2*pf[m]
         thresh[m] = ((math.sqrt(2)*sp.erfinv(val))/ math.sqrt(num_samples))+1
-        weights = model.predict(snrs)
+        weights = model.predict(snrs_test)
         print("this is the weights shape", weights.shape)
         print("this is the weights vector", weights)
         print("the is any negative value?: ", weights.any()<0)
-        print("weights vector sum = ", weights[1].sum())
-        weights = get_weights(weights)
-        weights = [float(i)/sum(weights) for i in weights]
+        print("weights vector sum = ", weights[k].sum())
+        weights = weights[k]
         print('weights',weights)
-        print('weights sum',sum(weights))                        
-        Statistic_test = generate_statistic_test(energy)
-        local_decisions = get_local_decisions(Statistic_test,thresh[m],local_decisions)
-        cooperative_decisions.append(get_cooperative_decision(Statistic_test,thresh[m],weights))
-            #print(decisions)    
+        print('weights sum',sum(weights)) 
+        old_maths_weights = old_paper_mathematical_weights(snrs_test[k],signal_power) 
+        print("mathematical weights", old_maths_weights)
+        #new_maths_weights = new_paper_mathematical_weights(snrs, signal_power)            
+        #print("mathematical weights", old_maths_weights)
+        local_decisions = get_local_decisions(snrs,thresh[m],local_decisions)
+        cooperative_decisions.append(get_cooperative_decision(snrs,thresh[m],weights))
+  
     local_pd(local_decisions,local_pds)
     cooperative_pds.append(get_cooperatieve_pd(cooperative_decisions))
     
   return cooperative_pds
 
-def weights_from_mathematical_model(snrs):
-    identity = np.identity(snrs.shape[1])
+def old_paper_mathematical_weights(snrs,signal_power):
+    # search why I should make the transpose
+    snrs = snrs.transpose()
+    print("this is the funny snrs",snrs)
+    # identity using the snrs matrix from the old paper
+    identity = np.identity(num_sens)
+    print("this is the identity", identity)
+    print("this is the snrs shape ", snrs.shape)
     print("identity shape", identity.shape)
     diagonal = np.diag(snrs)
+    print("this the diagonal", diagonal)
     print("diagonal shape", diagonal.shape)
     D = np.sqrt((num_samples*identity)+diagonal)
     print("D shape", D.shape)
     D_inv = np.linalg.inv(D)
     print("D_inv shape", D_inv.shape)
-    t1 = np.dot(D_inv,snrs)
-    t2 = np.dot(snrs.transpose(),D_inv)
-    mat = np.dot(t1,t2)
+    #t1 = np.dot(D_inv,snrs.transpose())
+    #t2 = np.dot(snrs,D_inv)
+    #mat = np.dot(t1,t2)
+    #print(" this is the mat matrix ", mat)
+    mat = D_inv*snrs*snrs.transpose()*D_inv
+    print(" this is the mat matrix ", mat)
     v, vects = np.linalg.eig(mat)
     maxcol = list(v).index(max(v))
     q_zero = vects[:,maxcol]
     norm = np.linalg.norm(D_inv*q_zero, ord=2)
     w1 = np.diag(D_inv*q_zero/norm)
-    w1_zero = np.sign(snrs.transpose()*w1)*w1
+    w1_zero = np.sign(snrs*w1)*w1
     w1 = real(w1)
-    w1 = convert(w1)
-    w1 = np.array(w1)
+    #w1 = convert(w1)
+    #w1 = np.array(w1)
     w1 = [float(i)/sum(w1) for i in w1]
+
     
     return w1
     
+def new_paper_mathematical_weights(snrs, signal_power):
+    
+    C_inv = np.linalg.pinv(signal_power)
+    
+    return np.dot(C_inv,snrs)
     
     
 
@@ -586,13 +583,14 @@ def weights_from_mathematical_model(snrs):
 def main():
     
     #snrs = np.array_split(np.array(ch_gen(num_samples)), 2)
-    snrs = np.array(ch_gen(num_samples))
-    labels= np.zeros((num_sens))
-    X_train, X_val, y_train, y_val = train_test_split(snrs, snrs, test_size=0.30)
+    snrs_train= np.array(ch_gen(num_samples)['snrs'])
+    signal_power = np.array(ch_gen(num_samples)['power'])
+    snrs_test = np.array(ch_gen(num_samples)['snrs'])
+    X_train, X_val, y_train, y_val = train_test_split(snrs_train, snrs_train, test_size=0.30)
     model = choose_model(get_model, "standard")
     history = train_model(model, X_train, X_val, y_train, y_val)
     eval_metric(model, history, "loss")
-    cooperative_pds = Compute_PdVSPf(model)
+    cooperative_pds = Compute_PdVSPf(model, snrs_test, signal_power)
     print("cooperative_pds",cooperative_pds)
     #maths_weights = weights_from_mathematical_model(snrs)
     #print("this is the mathematical weights")
