@@ -512,7 +512,7 @@ def Compute_PdVSPf(model, snrs_test, signal_power):
         weights = weights[k]
         print('weights',weights)
         print('weights sum',sum(weights)) 
-        old_maths_weights = old_paper_mathematical_weights(snrs_test[k],signal_power) 
+        old_maths_weights = old_paper_mathematical_weights(snrs_test[k]) 
         print("mathematical weights", old_maths_weights)
         #new_maths_weights = new_paper_mathematical_weights(snrs, signal_power)            
         #print("mathematical weights", old_maths_weights)
@@ -538,24 +538,33 @@ def old_paper_mathematical_weights(snrs):
     
     # search why I should make the transpose
     snrs = snrs.transpose()
+    print("this is the choosen snrs", snrs)
     # identity using the snrs matrix from the old paper
     identity = np.identity(num_sens)
     diagonal = np.diag(snrs)
     D = np.sqrt((num_samples*identity)+diagonal)
+    print("this is D",D)
     D_inv = np.linalg.inv(D)
+    print("this is D_inv",D_inv)
     mat = D_inv*snrs*snrs.transpose()*D_inv
+    print("this is mat", mat)
     v, vects = np.linalg.eig(mat)
     print("this is the eigen values",v)
     print("this is the eigen vector", vects)
     maxcol = list(v).index(max(v))
+    print("this is the maxcol", maxcol)
     q_zero = vects[:,maxcol]
-    norm = np.linalg.norm(D_inv*q_zero, ord=2)
-    w1 = np.diag(D_inv*q_zero/norm)
-    w1_zero = np.sign(snrs*w1)*w1
+    print("this is the q_zero", q_zero)
+    
+    norm = np.linalg.norm(np.dot( D_inv,q_zero), ord=2)
+    print("this is the norm of the formula", norm)
+    
+    w1 = np.dot( D_inv,q_zero)/norm
+    #w1_zero = np.sign(snrs*w1)*w1
     w1 = real(w1)
     #w1 = convert(w1)
     #w1 = np.array(w1)
-    w1 = [float(i)/sum(w1) for i in w1]
+    #w1 = [float(i)/sum(w1) for i in w1]
 
     
     return w1
