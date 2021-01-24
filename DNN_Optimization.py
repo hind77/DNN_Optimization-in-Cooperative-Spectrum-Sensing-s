@@ -514,6 +514,10 @@ def Compute_PdVSPf(model, snrs_test, signal_power):
         print('weights sum',sum(weights)) 
         old_maths_weights = old_paper_mathematical_weights(snrs_test[k]) 
         print("mathematical weights", old_maths_weights)
+        DNN_dm_square = compute_deflection_coef(weights,snrs_test[k])
+        print("DNN deflection coef",DNN_dm_square)
+        mathematical_dm_square = compute_deflection_coef(old_maths_weights,snrs_test[k])
+        print("mathematical deflection coef",mathematical_dm_square)        
         #new_maths_weights = new_paper_mathematical_weights(snrs, signal_power)            
         #print("mathematical weights", old_maths_weights)
         local_decisions = get_local_decisions(snrs,thresh[m],local_decisions)
@@ -539,6 +543,7 @@ def old_paper_mathematical_weights(snrs):
     # search why I should make the transpose
     snrs = snrs.transpose()
     print("this is the choosen snrs", snrs)
+    
     # identity using the snrs matrix from the old paper
     identity = np.identity(num_sens)
     diagonal = np.diag(snrs)
@@ -587,7 +592,16 @@ def new_paper_mathematical_weights(snrs, signal_power):
     
     return np.dot(C_inv,snrs)
     
+def compute_deflection_coef(weights,snrs):
+    snrs = snrs.transpose()
+    print("this is the choosen snrs shape", snrs.transpose().shape)
+    print("this is the choosen weights shape", weights.shape)
+    t = np.dot(snrs.transpose(),weights)**2
+    b = (4*weights.transpose())*(num_samples*np.identity(num_sens)+np.diag(snrs))*weights
     
+    dm_square = t/b
+    
+    return dm_square
 
 
 
