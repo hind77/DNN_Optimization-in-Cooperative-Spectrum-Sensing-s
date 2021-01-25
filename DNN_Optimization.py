@@ -419,7 +419,7 @@ def compare_models(model_1, model_2,
     
 
 
-def column(matrix, i)-> np.ndarray():
+def column(matrix, i)-> np.ndarray:
     '''
     Function to returns a specific column to a row
     
@@ -427,7 +427,7 @@ def column(matrix, i)-> np.ndarray():
     return [row[i] for row in matrix]
 
 
-def define_users_snrs(snrs)-> dict():
+def define_users_snrs(snrs)-> dict:
     '''
     Function to return a dictionary that representes each user with its signal
     
@@ -441,7 +441,7 @@ def define_users_snrs(snrs)-> dict():
 
 
 
-def get_local_decisions(static,thresh,decisions)-> dict():
+def get_local_decisions(static,thresh,decisions)-> dict:
     
   '''
     Function to return a dictionary that representes each user with its decisions
@@ -455,7 +455,7 @@ def get_local_decisions(static,thresh,decisions)-> dict():
   #print("loop decisioon",decisions)
   return decisions
 
-def get_cooperative_decision(static,thresh,weights)-> np.ndarray():
+def get_cooperative_decision(static,thresh,weights)-> np.ndarray:
   '''
     Function to return a cooperative decision
     
@@ -469,7 +469,7 @@ def get_cooperative_decision(static,thresh,weights)-> np.ndarray():
  
       
       
-def get_cooperatieve_pd(cooperative_decisions)-> np.ndarray():
+def get_cooperatieve_pd(cooperative_decisions)-> np.ndarray:
     
     return sum(cooperative_decisions)/rounds
      
@@ -477,7 +477,7 @@ def get_cooperatieve_pd(cooperative_decisions)-> np.ndarray():
           
     
 
-def local_pd(decisions,pds)-> np.ndarray():
+def local_pd(decisions,pds)-> np.ndarray:
 
       
   '''
@@ -532,7 +532,7 @@ def Compute_PdVSPf(model, snrs_test, signal_power):
     
   return cooperative_pds
 
-def old_paper_mathematical_weights(snrs)-> np.ndarray():
+def old_paper_mathematical_weights(snrs)-> np.ndarray:
     '''
     Function to compute the weights from the mathematical formula in 2007 paper
     
@@ -578,7 +578,7 @@ def old_paper_mathematical_weights(snrs)-> np.ndarray():
     
     return w1
     
-def new_paper_mathematical_weights(snrs, signal_power)-> np.ndarray():
+def new_paper_mathematical_weights(snrs, signal_power)-> np.ndarray:
     
     '''
     Function to compute the weights from the mathematical formula in 2016 paper
