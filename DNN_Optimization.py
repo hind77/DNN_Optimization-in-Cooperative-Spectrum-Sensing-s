@@ -598,12 +598,20 @@ def new_paper_mathematical_weights(snrs, signal_power)-> np.ndarray:
     
 def compute_deflection_coef(weights,snrs)-> float:
     snrs = snrs.transpose()
-    print("this is the choosen snrs shape", snrs.transpose().shape)
+    snrs = snrs.reshape(10,1)
+    weights = weights.reshape(10,1)
+
+    print("this is the choosen snrs shape", snrs.shape)
     print("this is the choosen weights shape", weights.shape)
     t = np.dot(snrs.transpose(),weights)**2
-    b = (4*weights.transpose())*(num_samples*np.identity(num_sens)+np.diag(snrs))*weights
+    print("this is the t shape", t.shape)
+    t1 = np.dot(4*weights.transpose(),(num_samples*np.identity(num_sens)+np.diag(snrs)))
+    print("this is the t1 shape", t1.shape)
+    b = np.dot(t1,weights)
+    print("this is the b shape", b.shape)
     
     dm_square = t/b
+    print("this is the dm_square shape", dm_square.shape)
     
     return dm_square
 
