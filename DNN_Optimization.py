@@ -26,6 +26,7 @@ from keras import layers
 from keras import models
 from keras import regularizers
 from statistics import mean 
+import pickle
 
 
 #----------------------------------------------------------------------------------------
@@ -48,7 +49,7 @@ sigma_v = 1 # noice variance
 
 batch_s = 64
 num_sens = 10
-samples_factor = 10
+samples_factor = 100
 num_samples = batch_s*samples_factor
 
 sen_loc = size_area*(np.random.rand(num_sens, 2)-0.5)
@@ -192,59 +193,59 @@ def choose_model(init_model, choice):
     if choice == "dropout":            
             model.add(Dense(num_sens, kernel_initializer=initializer))
             model.add(LeakyReLU(alpha=0.05))
-            model.add(layers.Dropout(0.3))
+            model.add(layers.Dropout(0.2))
             model.add(BatchNormalization())
             model.add(Dense(64))
             model.add(LeakyReLU(alpha=0.05))
-            model.add(layers.Dropout(0.3))
+            model.add(layers.Dropout(0.2))
             model.add(BatchNormalization())
             model.add(Dense(32))
             model.add(LeakyReLU(alpha=0.05))
-            model.add(layers.Dropout(0.3))
+            model.add(layers.Dropout(0.2))
             model.add(BatchNormalization())
             model.add(Dense(16))
             model.add(LeakyReLU(alpha=0.05))
-            model.add(layers.Dropout(0.3))
+            model.add(layers.Dropout(0.2))
             model.add(BatchNormalization())
             model.add(Dense(num_sens, activation='softmax',name='last_layer'))
             model._name = 'dropout'
             
     if choice == "dropout_Rl1":           
             model.add(Dense(num_sens, kernel_initializer=initializer))
-            model.add(LeakyReLU(alpha=0.01))
-            model.add(layers.Dropout(0.3))
+            model.add(LeakyReLU(alpha=0.001))
+            model.add(layers.Dropout(0.2))
             model.add(BatchNormalization())
             model.add(Dense(64, kernel_regularizer=regularizers.l1(0.0005)))
-            model.add(LeakyReLU(alpha=0.01))
-            model.add(layers.Dropout(0.3))
+            model.add(LeakyReLU(alpha=0.001))
+            model.add(layers.Dropout(0.2))
             model.add(BatchNormalization())
             model.add(Dense(32, kernel_regularizer=regularizers.l1(0.0005)))
-            model.add(LeakyReLU(alpha=0.01))
-            model.add(layers.Dropout(0.3))
+            model.add(LeakyReLU(alpha=0.001))
+            model.add(layers.Dropout(0.2))
             model.add(BatchNormalization())
             model.add(Dense(16, kernel_regularizer=regularizers.l1(0.0005)))
-            model.add(LeakyReLU(alpha=0.01))
-            model.add(layers.Dropout(0.3))
+            model.add(LeakyReLU(alpha=0.001))
+            model.add(layers.Dropout(0.2))
             model.add(BatchNormalization())
             model.add(Dense(num_sens, activation='softmax',name='last_layer'))
             model._name = 'Dropout_Model_Rl1'
  
     if choice == "dropout_Rl2":           
-            model.add(Dense(kernel_initializer=initializer))
+            model.add(Dense(num_sens, kernel_initializer=initializer))
             model.add(LeakyReLU(alpha=0.001))
-            model.add(layers.Dropout(0.3))
+            model.add(layers.Dropout(0.2))
             model.add(BatchNormalization())
-            model.add(Dense(64))
+            model.add(Dense(64,kernel_regularizer=regularizers.l2(0.0005)))
             model.add(LeakyReLU(alpha=0.001))
-            model.add(layers.Dropout(0.3))
+            model.add(layers.Dropout(0.2))
             model.add(BatchNormalization())
-            model.add(Dense(32))
+            model.add(Dense(32,kernel_regularizer=regularizers.l2(0.0005)))
             model.add(LeakyReLU(alpha=0.001))
-            model.add(layers.Dropout(0.3))
+            model.add(layers.Dropout(0.2))
             model.add(BatchNormalization())
-            model.add(Dense(16))
+            model.add(Dense(16,kernel_regularizer=regularizers.l2(0.0005)))
             model.add(LeakyReLU(alpha=0.001))
-            model.add(layers.Dropout(0.3))
+            model.add(layers.Dropout(0.2))
             model.add(BatchNormalization())
             model.add(Dense(num_sens, activation='softmax',name='last_layer'))
             model._name = 'Dropout_Model_Rl2'            
@@ -279,7 +280,7 @@ def get_model():
     """
     model = Sequential()
     model.add(BatchNormalization(input_shape=(num_sens,)))
-    initializer = tf.keras.initializers.GlorotUniform()
+    initializer = tf.keras.initializers.GlorotUniform(seed=(1))
     return model, initializer          
     
 
@@ -303,10 +304,10 @@ def train_model(model, X_train: np.ndarray, X_val: np.ndarray,
     
     """
     history = []
-    opt = tf.keras.optimizers.Adam(learning_rate=0.0003)
-    callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=3) 
+    opt = tf.keras.optimizers.Adam(learning_rate=0.001)
+    callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=50) 
     model.compile(loss = loss_fn , optimizer=opt)
-    history = model.fit(X_train,y_train,batch_size=batch_s,epochs=20,validation_data=(X_val,y_val),callbacks=[callback])
+    history = model.fit(X_train,y_train,batch_size=batch_s,epochs=200,validation_data=(X_val,y_val),callbacks=[callback])
     for layer in model.layers:
      print(layer.output_shape)
 
@@ -374,8 +375,11 @@ def eval_metric(model, history: np.ndarray,
     
     
 def compare_models(model_1, model_2, 
-                   model_3, history_1: np.ndarray,
-                   history_2: np.ndarray, history_3: np.ndarray, 
+                   model_3, 
+                   history_1: np.ndarray,
+                   history_2: np.ndarray, 
+                   history_3: np.ndarray, 
+                  
                    metric: str):
 
     '''
@@ -509,8 +513,8 @@ def Compute_PdVSPf(model, snrs_test,
   for m in range(0,len(pf)):
     local_decisions = {k: [] for k in range(num_sens)}
     cooperative_decisions = list()
-    for k in range(0,rounds):#Number of Monte Carlo Simulations
     
+    for k in range(0,rounds):#Number of Monte Carlo Simulations   
         snrs = define_users_snrs(snrs_test[k])
         val = 1-2*pf[m]
         thresh[m] = ((math.sqrt(2)*sp.erfinv(val))/ math.sqrt(num_samples))+1
@@ -520,13 +524,16 @@ def Compute_PdVSPf(model, snrs_test,
         print('weights sum',sum(weights)) 
         old_maths_weights = old_paper_mathematical_weights(snrs_test[k]) 
         print("mathematical weights", old_maths_weights)
-        DNN_dm_square = compute_deflection_coef(weights,snrs_test[k])
+        DNN_dm_square = compute_deflection_coef(weights,
+                                                snrs_test[k])
         print("DNN deflection coef",DNN_dm_square)
-        mathematical_dm_square = compute_deflection_coef(old_maths_weights, snrs_test[k])
+        mathematical_dm_square = compute_deflection_coef(old_maths_weights, 
+                                                         snrs_test[k])
         print("mathematical deflection coef",mathematical_dm_square)        
-
-        local_decisions = get_local_decisions(snrs,thresh[m],local_decisions)
-        cooperative_decisions.append(get_cooperative_decision(snrs,thresh[m],
+        local_decisions = get_local_decisions(snrs,thresh[m],
+                                              local_decisions)
+        cooperative_decisions.append(get_cooperative_decision(snrs,
+                                                              thresh[m],
                                                               weights))
   
     local_pd(local_decisions,local_pds)
@@ -623,21 +630,41 @@ def compute_deflection_coef(weights,snrs)-> float:
 
 def main():
     
-    #snrs = np.array_split(np.array(ch_gen(num_samples)), 2)
-    snrs_train= np.array(ch_gen(num_samples)['snrs'])
-    signal_power = np.array(ch_gen(num_samples)['power'])
+    with open('trainData.data', 'rb') as filehandle:
+        snrs_train = np.asarray(pickle.load(filehandle))
+        snrs_train = snrs_train.reshape(num_samples,10)
+    # print(snrs_train.shape)   
+    #snrs_train= np.array(ch_gen(num_samples)['snrs'])
+    # print(snrs_train.shape) 
+    #to stock data 
+    # our_file = [snrs_train]
+    # with open('trainData.data', 'wb') as filehandle: 
+    #   pickle.dump(our_file, filehandle)
+    #signal_power = np.array(ch_gen(num_samples)['power'])
     snrs_test = np.array(ch_gen(num_samples)['snrs'])
     X_train, X_val, y_train, y_val = train_test_split(snrs_train, snrs_train, test_size=0.30)
-    model = choose_model(get_model, "standard")
-    history = train_model(model, X_train, X_val, y_train, y_val)
-    eval_metric(model, history, "loss")
-    cooperative_pds = Compute_PdVSPf(model, snrs_test, signal_power)
-    print("cooperative_pds",cooperative_pds)    
-    plt.plot(pf,cooperative_pds)
-    plt.title("Pf Vs Pd")
-    plt.xlabel("probability of false alarm")
-    plt.ylabel("probability of detection");
-    plt.show()
+    
+    model_dropout = choose_model(get_model, "dropout")
+    model_R1 = choose_model(get_model, "dropout_Rl1")
+    model_R2 = choose_model(get_model, "dropout_Rl2")
+
+    history_dropout = train_model(model_dropout, X_train, X_val, y_train, y_val)
+    history_R1 = train_model(model_R1, X_train, X_val, y_train, y_val)
+    history_R2 = train_model(model_R2, X_train, X_val, y_train, y_val)
+
+    eval_metric(model_dropout, history_dropout, "loss")
+    eval_metric(model_R1, history_R1, "loss")
+    eval_metric(model_R2, history_R2, "loss")
+
+    compare_models(model_dropout, model_R1, model_R2,  history_dropout, history_R1, history_R2, "val_loss")
+    
+    #cooperative_pds = Compute_PdVSPf(model, snrs_test, signal_power)
+    #print("cooperative_pds",cooperative_pds)    
+    # plt.plot(pf,cooperative_pds)
+    # plt.title("Pf Vs Pd")
+    # plt.xlabel("probability of false alarm")
+    # plt.ylabel("probability of detection");
+    # plt.show()
 
    
     
