@@ -189,22 +189,22 @@ def choose_model(init_model, choice):
     """   
     model, initializer = init_model()
     
-    if choice == "standard":            
+    if choice == "dropout":            
             model.add(Dense(num_sens, kernel_initializer=initializer))
             model.add(LeakyReLU(alpha=0.05))
-            
+            model.add(layers.Dropout(0.3))
             model.add(BatchNormalization())
             model.add(Dense(64))
             model.add(LeakyReLU(alpha=0.05))
-            
+            model.add(layers.Dropout(0.3))
             model.add(BatchNormalization())
             model.add(Dense(32))
             model.add(LeakyReLU(alpha=0.05))
-            
+            model.add(layers.Dropout(0.3))
             model.add(BatchNormalization())
             model.add(Dense(16))
             model.add(LeakyReLU(alpha=0.05))
-            
+            model.add(layers.Dropout(0.3))
             model.add(BatchNormalization())
             model.add(Dense(num_sens, activation='softmax',name='last_layer'))
             model._name = 'dropout'
@@ -499,7 +499,9 @@ def real(w1):
 def convert(lst): 
     return [[el] for el in lst]
 
-def Compute_PdVSPf(model, snrs_test, signal_power):
+def Compute_PdVSPf(model, snrs_test,
+                   signal_power) -> np.ndarray :
+    
   '''
     Function to return the cooperative probability of detection 
     
@@ -520,12 +522,12 @@ def Compute_PdVSPf(model, snrs_test, signal_power):
         print("mathematical weights", old_maths_weights)
         DNN_dm_square = compute_deflection_coef(weights,snrs_test[k])
         print("DNN deflection coef",DNN_dm_square)
-        mathematical_dm_square = compute_deflection_coef(old_maths_weights,snrs_test[k])
+        mathematical_dm_square = compute_deflection_coef(old_maths_weights, snrs_test[k])
         print("mathematical deflection coef",mathematical_dm_square)        
-        #new_maths_weights = new_paper_mathematical_weights(snrs, signal_power)            
-        #print("mathematical weights", old_maths_weights)
+
         local_decisions = get_local_decisions(snrs,thresh[m],local_decisions)
-        cooperative_decisions.append(get_cooperative_decision(snrs,thresh[m],weights))
+        cooperative_decisions.append(get_cooperative_decision(snrs,thresh[m],
+                                                              weights))
   
     local_pd(local_decisions,local_pds)
     cooperative_pds.append(get_cooperatieve_pd(cooperative_decisions))
@@ -534,7 +536,8 @@ def Compute_PdVSPf(model, snrs_test, signal_power):
 
 def old_paper_mathematical_weights(snrs)-> np.ndarray:
     '''
-    Function to compute the weights from the mathematical formula in 2007 paper
+    Function to compute the weights from the mathematical 
+    formula in 2007 paper
     
     Parameters:
         
@@ -605,7 +608,8 @@ def compute_deflection_coef(weights,snrs)-> float:
     print("this is the choosen weights shape", weights.shape)
     t = np.dot(snrs.transpose(),weights)**2
     print("this is the t shape", t.shape)
-    t1 = np.dot(4*weights.transpose(),(num_samples*np.identity(num_sens)+np.diag(snrs)))
+    t1 = np.dot(4*weights.transpose(),
+                (num_samples*np.identity(num_sens)+np.diag(snrs)))
     print("this is the t1 shape", t1.shape)
     b = np.dot(t1,weights)
     print("this is the b shape", b.shape)
@@ -628,11 +632,7 @@ def main():
     history = train_model(model, X_train, X_val, y_train, y_val)
     eval_metric(model, history, "loss")
     cooperative_pds = Compute_PdVSPf(model, snrs_test, signal_power)
-    print("cooperative_pds",cooperative_pds)
-    #maths_weights = weights_from_mathematical_model(snrs)
-    #print("this is the mathematical weights")
-    # simulation plots
-    
+    print("cooperative_pds",cooperative_pds)    
     plt.plot(pf,cooperative_pds)
     plt.title("Pf Vs Pd")
     plt.xlabel("probability of false alarm")
