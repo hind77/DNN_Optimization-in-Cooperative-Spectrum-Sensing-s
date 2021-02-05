@@ -102,6 +102,18 @@ class MathematicalModel:
     @staticmethod
     def real(w1):
         return w1.real
+    
     @staticmethod
     def convert(lst): 
         return [[el] for el in lst]
+    
+    @staticmethod
+    def sum_s(snrs, *x):        
+    
+        return sum(x, snrs)**2
+    @staticmethod
+    def mul(snrs, *x): 
+
+        x= [s**2 for s in x]
+ 
+        return (4*snrs)*(x)     
