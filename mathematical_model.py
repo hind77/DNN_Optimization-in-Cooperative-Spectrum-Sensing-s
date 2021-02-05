@@ -8,10 +8,14 @@
 import numpy as np
 from global_vars import *
 import math 
+from scipy.optimize import minimize, rosen, rosen_der
+from numpy import linalg as LA
+import itertools
 
 class MathematicalModel:
     
-    def old_paper_mathematical_weights(self,snrs)-> np.ndarray:
+    @classmethod
+    def old_paper_mathematical_weights(cls,snrs)-> np.ndarray:
         
         '''
         Function to compute the weights from the mathematical 
@@ -36,11 +40,11 @@ class MathematicalModel:
         q_zero = vects[:,maxcol]        
         norm = np.linalg.norm(np.dot( D_inv,q_zero), ord=2)        
         w1 = np.dot( D_inv,q_zero)/norm
-        w1 = self.real(w1)
+        w1 = cls.real(w1)
         w1 = np.array(w1)     
         return w1
-    
-    def new_paper_mathematical_weights(self, snrs: np.ndarray, signal_power: np.ndarray)-> np.ndarray:
+    @staticmethod
+    def new_paper_mathematical_weights(snrs: np.ndarray, signal_power: np.ndarray)-> np.ndarray:
     
         '''
         Function to compute the weights from the mathematical formula in 2016 paper
@@ -56,8 +60,8 @@ class MathematicalModel:
         
         C_inv = np.linalg.pinv(signal_power)
         return np.dot(C_inv,snrs)
-    
-    def compute_deflection_coef(self, weights: np.ndarray, snrs: np.ndarray)-> float:
+    @staticmethod
+    def compute_deflection_coef(weights: np.ndarray, snrs: np.ndarray)-> float:
         '''
         Function to compute the deflection coef from the mathematical 
         formula in 2007 paper
@@ -82,9 +86,22 @@ class MathematicalModel:
         dm_square = t/b
         
         return dm_square
-    
-    def real(self,w1):
+    @staticmethod
+    def compute_weights_using_deflection_coef(snrs) -> np.ndarray:       
+        #fun = lambda x: ((x[i]*nu[i] for i in range(0,len(nu)))**2)/(4*((n+nu[i])*x[i]**2 for i in range(0,len(nu))))
+        n = 50
+        nu = snrs
+        fun = lambda x: ((x[0]*nu[0] + x[1]*nu[1]+x[2]*nu[2]+x[3]*nu[3]+x[4]*nu[4]+x[5]*nu[5]+x[6]*nu[6]+x[7]*nu[7]+x[8]*nu[8]+x[9]*nu[9])**2)/(4*((n+nu[0])*x[0]**2+(n+nu[1])*x[1]**2+(n+nu[2])*x[2]**2+(n+nu[3])*x[3]**2+(n+nu[4])*x[4]**2+(n+nu[5])*x[5]**2+(n+nu[6])*x[6]**2+(n+nu[7])*x[7]**2+(n+nu[8])*x[8]**2+(n+nu[9])*x[9]**2))        
+        #fun = lambda x: (sum_s(nu, x))/mul(nu, x)        
+        constraint = ({'type': 'eq', 'fun': lambda x:  LA.norm(x,1)-1})
+        bnds = ((0, 1),) * len(snrs)
+        random_guess = np.random.dirichlet(np.ones(10)*1000.,size=1)
+        random_guess = tuple(list(random_guess[0]))
+        res = minimize(fun, random_guess, method='SLSQP', bounds=bnds, constraints=constraint)
+        return(res.x)
+    @staticmethod
+    def real(w1):
         return w1.real
-
-    def convert(self,lst): 
+    @staticmethod
+    def convert(lst): 
         return [[el] for el in lst]

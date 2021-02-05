@@ -81,32 +81,35 @@ class SpectrumSensing:
         Function to return the cooperative probability of detection 
         
       '''  
-      mathematical_model = MathematicalModel()
+     
       for m in range(0,len(pf)):
         local_decisions = {k: [] for k in range(num_sens)}
         cooperative_decisions = list()
         
         for k in range(0,rounds):#Number of Monte Carlo Simulations   
-            snrs = define_users_snrs(snrs_test[k])
             val = 1-2*pf[m]
             thresh[m] = ((math.sqrt(2)*sp.erfinv(val))/ math.sqrt(num_samples))+1
             weights = model.predict(snrs_test)
             weights = weights[k]
-            old_maths_weights = mathematical_model.old_paper_mathematical_weights(snrs_test[k]) 
+            print("dnn weights", weights)
+            numerical_weights = MathematicalModel.compute_weights_using_deflection_coef(snrs_test[k])
+            print("numerical weights", numerical_weights)
+            old_maths_weights = MathematicalModel.old_paper_mathematical_weights(snrs_test[k]) 
             print("mathematical weights", old_maths_weights)
-            DNN_dm_square = mathematical_model.compute_deflection_coef(weights,
+            DNN_dm_square = MathematicalModel.compute_deflection_coef(weights,
                                                     snrs_test[k])
             print("DNN deflection coef",DNN_dm_square)
-            mathematical_dm_square = mathematical_model.compute_deflection_coef(old_maths_weights, 
+            
+            mathematical_dm_square = MathematicalModel.compute_deflection_coef(old_maths_weights, 
                                                              snrs_test[k])
             print("mathematical deflection coef",mathematical_dm_square)        
-            local_decisions = self.get_local_decisions(snrs,thresh[m],
-                                                  local_decisions)
-            cooperative_decisions.append(self.get_cooperative_decision(snrs,
-                                                                  thresh[m],
-                                                                  weights))
+        #     local_decisions = self.get_local_decisions(snrs_t,thresh[m],
+        #                                           local_decisions)
+        #     cooperative_decisions.append(self.get_cooperative_decision(snrs,
+        #                                                           thresh[m],
+        #                                                           weights))
       
-        local_pd(local_decisions,local_pds)
-        cooperative_pds.append(get_cooperatieve_pd(cooperative_decisions))
+        # local_pd(local_decisions,local_pds)
+        # cooperative_pds.append(get_cooperatieve_pd(cooperative_decisions))
         
       return cooperative_pds

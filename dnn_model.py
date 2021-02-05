@@ -21,8 +21,8 @@ import matplotlib.pyplot as plt
 
 class DNNModel:
     
-    
-    def get_model(self):
+    @staticmethod
+    def get_model():
         
         """ 
         This function returns sequential model and the model initilizer
@@ -33,8 +33,8 @@ class DNNModel:
         initializer = tf.keras.initializers.GlorotUniform(seed=(1))
         return model, initializer     
 
-
-    def choose_model(self,init_model, choice: str):
+    @staticmethod
+    def choose_model(init_model, choice: str):
         """ 
         This function defines the model architecture and returns the model
       
@@ -122,8 +122,8 @@ class DNNModel:
                 model._name = 'Linear_Model'              
                 
         return model
-    
-    def train_model(self, model, X_train: np.ndarray, X_val: np.ndarray,
+    @classmethod
+    def train_model(cls, model, X_train: np.ndarray, X_val: np.ndarray,
               y_train: np.ndarray, y_val: np.ndarray) -> np.ndarray:
         """
         This function trains the model. The number of epochs and 
@@ -143,14 +143,15 @@ class DNNModel:
         history = []
         opt = tf.keras.optimizers.Adam(learning_rate=0.001)
         callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=50) 
-        model.compile(loss = self.loss_fn , optimizer=opt)
+        model.compile(loss = cls.loss_fn , optimizer=opt)
         history = model.fit(X_train,y_train,batch_size=batch_s,epochs=200,validation_data=(X_val,y_val),callbacks=[callback])
         for layer in model.layers:
          print(layer.output_shape)
     
         return history
     
-    def loss_fn(self, snrs: np.ndarray, predicted) -> float:
+    @staticmethod
+    def loss_fn(snrs: np.ndarray, predicted) -> float:
       """ 
         This is a customized loss function
         
@@ -178,8 +179,9 @@ class DNNModel:
       b=tf.reduce_sum(tf.math.multiply(b_1,b))
       loss= -t/b
       return loss / batch_s
-
-    def eval_metric(self, model, history: np.ndarray,
+  
+    @staticmethod
+    def eval_metric(model, history: np.ndarray,
                     metric_name: str) -> np.ndarray:
         '''
         Function to evaluate a trained model on a chosen metric. 
@@ -208,8 +210,9 @@ class DNNModel:
         #plt.show()  
         plt.savefig('Loss ' + model.name +'.pdf')
         plt.close()
-        
-    def compare_models(self, model_1, model_2, 
+    
+    @staticmethod    
+    def compare_models(model_1, model_2, 
                        model_3, 
                        history_1: np.ndarray,
                        history_2: np.ndarray, 
