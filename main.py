@@ -41,7 +41,8 @@ def main():
     DNNModel.compare_models(model_dropout, model_R1, model_R2,  history_dropout, history_R1, history_R2, "val_loss")
     
     spectrum_sensing = SpectrumSensing()
-    cooperative_pds = spectrum_sensing.Compute_PdVSPf(model_R2, snrs_test, signal_power)
+    
+    spectrum_sensing.generate_weights(model_R2, snrs_test, signal_power)
 
 
    

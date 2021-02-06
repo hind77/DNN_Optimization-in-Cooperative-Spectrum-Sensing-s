@@ -91,7 +91,7 @@ class MathematicalModel:
         #fun = lambda x: ((x[i]*nu[i] for i in range(0,len(nu)))**2)/(4*((n+nu[i])*x[i]**2 for i in range(0,len(nu))))
         n = 50
         nu = snrs
-        fun = lambda x: ((x[0]*nu[0] + x[1]*nu[1]+x[2]*nu[2]+x[3]*nu[3]+x[4]*nu[4]+x[5]*nu[5]+x[6]*nu[6]+x[7]*nu[7]+x[8]*nu[8]+x[9]*nu[9])**2)/(4*((n+nu[0])*x[0]**2+(n+nu[1])*x[1]**2+(n+nu[2])*x[2]**2+(n+nu[3])*x[3]**2+(n+nu[4])*x[4]**2+(n+nu[5])*x[5]**2+(n+nu[6])*x[6]**2+(n+nu[7])*x[7]**2+(n+nu[8])*x[8]**2+(n+nu[9])*x[9]**2))        
+        fun = lambda x: - ((x[0]*nu[0] + x[1]*nu[1]+x[2]*nu[2]+x[3]*nu[3]+x[4]*nu[4]+x[5]*nu[5]+x[6]*nu[6]+x[7]*nu[7]+x[8]*nu[8]+x[9]*nu[9])**2)/(4*((n+nu[0])*x[0]**2+(n+nu[1])*x[1]**2+(n+nu[2])*x[2]**2+(n+nu[3])*x[3]**2+(n+nu[4])*x[4]**2+(n+nu[5])*x[5]**2+(n+nu[6])*x[6]**2+(n+nu[7])*x[7]**2+(n+nu[8])*x[8]**2+(n+nu[9])*x[9]**2))       
         #fun = lambda x: (sum_s(nu, x))/mul(nu, x)        
         constraint = ({'type': 'eq', 'fun': lambda x:  LA.norm(x,1)-1})
         bnds = ((0, 1),) * len(snrs)

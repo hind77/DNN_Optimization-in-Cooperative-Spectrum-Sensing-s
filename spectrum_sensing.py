@@ -10,6 +10,8 @@ from global_vars import *
 import math 
 from scipy import special as sp
 from mathematical_model import MathematicalModel
+import scipy.spatial.distance
+import matplotlib.pyplot as plt
 
 class SpectrumSensing:
     
@@ -72,44 +74,52 @@ class SpectrumSensing:
             pds[k].append(sum(v)/rounds)
           
           return pd
-      
+    def compute_euclidian_distance(self, numerical_weights, dnn_weights):
+        distance = []
+        for i in range(0,len(numerical_weights)):
+             dnn_weights = dnn_weights + (i / 10000.)
+             distance.append(scipy.spatial.distance.euclidean(numerical_weights.flatten(), dnn_weights.flatten()))
         
-    def Compute_PdVSPf(self,model, snrs_test,
+        plt.figure(4)
+        ax = plt.axes()    
+        ax.plot(distance, linestyle= 'solid', color='orange', label="euclidian distance")
+        ax.margins(x=0,y=0)
+        plt.xlabel('')
+        plt.ylabel('distance')
+        plt.title('euclidian distance: (dnn vs numerical) weights')
+        plt.legend()
+        plt.show()
+        
+        
+        
+        
+    def generate_weights(self,model, snrs_test,
                        signal_power) -> np.ndarray :
         
       '''
-        Function to return the cooperative probability of detection 
+        Function to returns different weights (dnn/numerical/mathematical)
         
-      '''  
-     
-      for m in range(0,len(pf)):
-        local_decisions = {k: [] for k in range(num_sens)}
-        cooperative_decisions = list()
+      '''      
         
-        for k in range(0,rounds):#Number of Monte Carlo Simulations   
-            val = 1-2*pf[m]
-            thresh[m] = ((math.sqrt(2)*sp.erfinv(val))/ math.sqrt(num_samples))+1
+      for k in range(0,rounds):#Number of Monte Carlo Simulations 
+            print("\n")
+            print("******** Results for Round {} ********".format(k))
+    
             weights = model.predict(snrs_test)
-            weights = weights[k]
-            print("dnn weights", weights)
+            dnn_weights = weights[k]
             numerical_weights = MathematicalModel.compute_weights_using_deflection_coef(snrs_test[k])
-            print("numerical weights", numerical_weights)
-            old_maths_weights = MathematicalModel.old_paper_mathematical_weights(snrs_test[k]) 
-            print("mathematical weights", old_maths_weights)
-            DNN_dm_square = MathematicalModel.compute_deflection_coef(weights,
-                                                    snrs_test[k])
-            print("DNN deflection coef",DNN_dm_square)
+            maths_weights_2007 = MathematicalModel.old_paper_mathematical_weights(snrs_test[k])
             
-            mathematical_dm_square = MathematicalModel.compute_deflection_coef(old_maths_weights, 
+            print("dnn weights", dnn_weights)        
+            print("numerical weights", numerical_weights)        
+            print("mathematical weights", maths_weights_2007)
+            DNN_dm_square = MathematicalModel.compute_deflection_coef(dnn_weights,
+                                                    snrs_test[k])
+            mathematical_dm_square = MathematicalModel.compute_deflection_coef(maths_weights_2007, 
                                                              snrs_test[k])
-            print("mathematical deflection coef",mathematical_dm_square)        
-        #     local_decisions = self.get_local_decisions(snrs_t,thresh[m],
-        #                                           local_decisions)
-        #     cooperative_decisions.append(self.get_cooperative_decision(snrs,
-        #                                                           thresh[m],
-        #                                                           weights))
-      
-        # local_pd(local_decisions,local_pds)
-        # cooperative_pds.append(get_cooperatieve_pd(cooperative_decisions))
-        
-      return cooperative_pds
+            numerical_dm_square = MathematicalModel.compute_deflection_coef(numerical_weights,
+                                                                            snrs_test[k])
+            print("DNN deflection coef",DNN_dm_square)
+            print("numerical deflection coef",numerical_dm_square)
+            print("mathematical deflection coef",mathematical_dm_square)
+            
