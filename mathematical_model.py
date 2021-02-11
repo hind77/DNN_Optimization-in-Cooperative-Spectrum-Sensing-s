@@ -43,8 +43,8 @@ class MathematicalModel:
         w1 = cls.real(w1)
         w1 = np.array(w1)     
         return w1
-    @staticmethod
-    def new_paper_mathematical_weights(snrs: np.ndarray, signal_power: np.ndarray)-> np.ndarray:
+    @classmethod
+    def new_paper_mathematical_weights(cls,snrs: np.ndarray)-> np.ndarray:
     
         '''
         Function to compute the weights from the mathematical formula in 2016 paper
@@ -57,9 +57,13 @@ class MathematicalModel:
         Output:
             mathematical weights
         '''      
-        
-        C_inv = np.linalg.pinv(signal_power)
-        return np.dot(C_inv,snrs)
+        C = np.diag(1+2*snrs)
+        C_inv = np.linalg.pinv(C)
+        norm = np.linalg.norm(np.dot(C_inv,snrs), ord=2)  
+        w_opt = np.dot( C_inv, snrs)/norm
+        w_opt = cls.real(w_opt)
+        w_opt = np.array(w_opt)   
+        return w_opt
     @staticmethod
     def compute_deflection_coef(weights: np.ndarray, snrs: np.ndarray)-> float:
         '''
@@ -81,7 +85,7 @@ class MathematicalModel:
         weights = weights.reshape(10,1)
         t = np.dot(snrs.transpose(),weights)**2
         t1 = np.dot(4*weights.transpose(),
-                    (num_samples*np.identity(num_sens)+np.diag(snrs)))
+                    (n*np.identity(num_sens)+np.diag(snrs)))
         b = np.dot(t1,weights)       
         dm_square = t/b
         

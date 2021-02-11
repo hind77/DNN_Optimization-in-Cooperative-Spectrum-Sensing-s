@@ -12,6 +12,7 @@ from scipy import special as sp
 from mathematical_model import MathematicalModel
 import scipy.spatial.distance
 import matplotlib.pyplot as plt
+from texttable import Texttable
 
 class SpectrumSensing:
     
@@ -74,7 +75,13 @@ class SpectrumSensing:
             pds[k].append(sum(v)/rounds)
           
           return pd
+      
     def compute_euclidian_distance(self, numerical_weights, dnn_weights):
+        
+        '''
+            return the euclidian distance between two arrays 
+            
+          '''  
         distance = []
         for i in range(0,len(numerical_weights)):
              dnn_weights = dnn_weights + (i / 10000.)
@@ -91,7 +98,12 @@ class SpectrumSensing:
         plt.show()
         
         
-        
+    def benshmarking_table(self,dnn_coef, math_coef, numerical_coef):
+        table = Texttable()
+        table.add_rows([['Deflection_coef', 'Value'], 
+                    ['dnn_coef', dnn_coef], ['numerical_coef', numerical_coef], 
+                    ['mathematical_coef',math_coef]])
+        print(table.draw())
         
     def generate_weights(self,model, snrs_test,
                        signal_power) -> np.ndarray :
@@ -109,17 +121,22 @@ class SpectrumSensing:
             dnn_weights = weights[k]
             numerical_weights = MathematicalModel.compute_weights_using_deflection_coef(snrs_test[k])
             maths_weights_2007 = MathematicalModel.old_paper_mathematical_weights(snrs_test[k])
+            maths_weights_2016 = MathematicalModel.new_paper_mathematical_weights(snrs_test[k])
             
-            print("dnn weights", dnn_weights)        
-            print("numerical weights", numerical_weights)        
-            print("mathematical weights", maths_weights_2007)
+            # print("dnn weights", dnn_weights)        
+            # print("numerical weights", numerical_weights)        
+            # print("mathematical weights", maths_weights_2007)
             DNN_dm_square = MathematicalModel.compute_deflection_coef(dnn_weights,
                                                     snrs_test[k])
-            mathematical_dm_square = MathematicalModel.compute_deflection_coef(maths_weights_2007, 
+            mathematical_dm_square_2007 = MathematicalModel.compute_deflection_coef(maths_weights_2007, 
                                                              snrs_test[k])
+            mathematical_dm_square_2016 = MathematicalModel.compute_deflection_coef(maths_weights_2016, 
+                                                             snrs_test[k])            
             numerical_dm_square = MathematicalModel.compute_deflection_coef(numerical_weights,
                                                                             snrs_test[k])
+            #self.benshmarking_table(DNN_dm_square, mathematical_dm_square, numerical_dm_square)
             print("DNN deflection coef",DNN_dm_square)
             print("numerical deflection coef",numerical_dm_square)
-            print("mathematical deflection coef",mathematical_dm_square)
+            print("mathematical deflection coef",mathematical_dm_square_2007)
+            print("mathematical deflection coef",mathematical_dm_square_2016)
             

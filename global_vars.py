@@ -7,6 +7,8 @@ Created on Wed Feb  3 17:00:57 2021
 """
 
 import numpy as np
+from scipy import special as sp
+import math
 
 size_area=200.0 # size of area sensors are distributed 
 
@@ -25,20 +27,26 @@ sigma_v = 1 # noice variance
 
 
 batch_s = 64
-num_sens = 10
+num_sens = 10 
 samples_factor = 100
 num_samples = batch_s*samples_factor
 
 sen_loc = size_area*(np.random.rand(num_sens, 2)-0.5)
 pri_loc = size_area*(np.random.rand(1, 2)-0.5) #placing sensing entities and primary user randomly
 
-pf = np.arange(0, 1, 0.05)# probability of false alarm 
+pf = 0.01
 pd = np.arange(0, 1, 0.05)# probability of detection
-thresh = [None] * len(pf) # the threshold
+val = 1-2*pf
+thresh = ((math.sqrt(2)*sp.erfinv(val))/ math.sqrt(num_samples))+1
 
-rounds = 4
+rounds = 10
 
-n=500
+n=50
 
 local_pds = {k: [] for k in range(num_sens)}
 cooperative_pds = list()
+
+pi_0 = 0.3
+pi_1 = 0.7
+fs = 100*1000
+T_cte = 0.003
