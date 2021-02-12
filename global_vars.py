@@ -49,4 +49,5 @@ cooperative_pds = list()
 pi_0 = 0.3
 pi_1 = 0.7
 fs = 100*1000
-T_cte = 0.003
+tr = 0.2*pow(10,-3)
+T_cte = (n/fs)+num_sens*tr

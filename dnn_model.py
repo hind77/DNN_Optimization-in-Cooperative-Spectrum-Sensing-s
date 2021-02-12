@@ -139,5 +139,6 @@ class DNNModel:
         plt.legend()
         #plt.show()
         plt.savefig('Comparing ' + metric_label + ' between models' +'.pdf')
+        plt.close()
         
     
