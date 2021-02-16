@@ -43,6 +43,7 @@ def main():
     # DNNModelP1.compare_models(model_dropout_P1, model_R1_P1, model_R2_P1,  history_dropout_P1, history_R1_P1, history_R2_P1, "val_loss")
     
     # the model for the second problem(p2) to get the optimal threshold to minimize the error function
+    
     model_dropout_P2 = DNNModelP2.choose_model_P2(DNNModelP2.get_model, "dropout")
     model_R1_P2 = DNNModelP2.choose_model_P2(DNNModelP2.get_model, "dropout_Rl1")
     model_R2_P2 = DNNModelP2.choose_model_P2(DNNModelP2.get_model, "dropout_Rl2")

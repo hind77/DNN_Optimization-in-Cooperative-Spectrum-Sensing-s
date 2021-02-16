@@ -33,32 +33,41 @@ class DNNModelP2(DNNModel):
             loss value   
           
       """  
-      proto_tensor = tf.make_tensor_proto(predicted)
-      predicted = tf.make_ndarray(proto_tensor)[0][0]
-      print(predicted)
-      # dim=batch_s*num_sens
-      # snrs = tf.reshape(snrs , [dim])
-      # C = tf.linalg.tensor_diag(1+2*snrs)
-      # C_inv = tf.linalg.inv(C)
-      # exp1 = predicted*tf.linalg.normalize(C_inv*snrs, ord=1)-fs*(T_cte - num_sens)*tf.keras.backend.transpose(snrs)*tf.keras.backend.transpose(C) 
-      # exp2 = tf.linalg.normalize(C*snrs, ord=1)* math.sqrt(2*fs*(T_cte - num_sens))
-      # exp3 = fs*(T_cte - num_sens)*tf.keras.backend.transpose(snrs)*tf.keras.backend.transpose(C_inv)- predicted*tf.linalg.normalize(C_inv*snrs, ord=1)
-      # exp4 = math.sqrt(2*fs*(T_cte - num_sens)*tf.keras.backend.transpose(snrs)*tf.keras.backend.transpose(C_inv)*snrs)
-      # p_0 = pi_0*cls.Q(exp1/exp2)
-      # p_1 = pi_1*cls.Q(exp3/exp4)
+      # proto_tensor = tf.make_tensor_proto(predicted)
+      # predicted = tf.make_ndarray(proto_tensor)
+      # print(predicted)
       
-      # loss = p_0 + p_1
+     
       dim=batch_s*num_sens
-      snrs = np.reshape(snrs, [dim])
-      C = np.diag(1+2*snrs)
-      C_inv = np.linalg.inv(C)
-      exp1 = np.dot(predicted, np.linalg.norm(np.dot( C_inv,snrs), ord=1))-np.dot(np.dot(fs*(T_cte - num_sens*tr), snrs.transpose()), C.transpose())
-      exp2 = np.dot(np.linalg.norm(np.dot( C,snrs), ord=1),math.sqrt(2*fs*(T_cte - num_sens*tr)))
-      exp3 = np.dot(np.dot((fs*(T_cte - num_sens)),snrs.transpose()), C_inv.transpose())- np.dot(predicted, np.linalg.norm(np.dot( C_inv,snrs), ord=1))
-      exp4 = np.dot(np.dot(np.dot((2*fs*(T_cte - num_sens*tr)), snrs.transpose()), C_inv.transpose()), snrs)
-      p_0 = pi_0*cls.Q(exp1/exp2)
-      p_1 = pi_1*cls.Q(exp3/exp4)
+      predicted=tf.reshape(predicted,[dim])
+      snrs = tf.reshape(snrs , [dim])
+      print("predicted shape", predicted.shape)
+      print("snrs shape",snrs.shape)
+      C = tf.linalg.tensor_diag(1+2*snrs)
+      print("c matrix", C.shape)
+      C_inv = tf.linalg.inv(C)
+      print("c_inv matrix", C_inv.shape)
+      exp1 = tf.math.multiply(predicted,tf.norm(tf.math.multiply(C_inv,snrs), ord=1, axis=None))-tf.math.multiply(tf.math.multiply(fs*(T_cte - num_sens*tr),tf.keras.backend.transpose(snrs)),tf.keras.backend.transpose(C)) 
+      exp2 = tf.linalg.norm(C*snrs, ord=1)* math.sqrt(2*fs*(T_cte - num_sens*tr))
+      exp3 = fs*(T_cte - num_sens*tr)*tf.keras.backend.transpose(snrs)*tf.keras.backend.transpose(C_inv)- predicted*tf.linalg.norm(C_inv*snrs, ord=1)
+      exp4 = tf.math.sqrt(tf.math.multiply(tf.math.multiply(tf.math.multiply(2*fs*(T_cte - num_sens*tr),tf.keras.backend.transpose(snrs)),tf.keras.backend.transpose(C_inv)),snrs))
+      p_0 = tf.math.multiply(pi_0,cls.Q(exp1/exp2))
+      p_1 = tf.math.multiply(pi_1,cls.Q(exp3/exp4))
       
+      #p_1 = tf.math.multiply(pi_1,cls.Q(exp3/exp4))       
+      # loss = (p_0 + p_1)
+      #loss = (exp1/exp2)+(exp3/exp4)
+      # dim=batch_s*num_sens
+      # snrs = np.reshape(snrs, [dim])
+      # predicted = np.reshape(snrs,[dim])
+      # C = np.diag(1+2*snrs)
+      # C_inv = np.linalg.inv(C)
+      # exp1 = np.dot(predicted, np.linalg.norm(np.dot( C_inv,snrs), ord=1))-np.dot(np.dot(fs*(T_cte - num_sens*tr), snrs.transpose()), C.transpose())
+      # exp2 = np.dot(np.linalg.norm(np.dot( C,snrs), ord=1),math.sqrt(2*fs*(T_cte - num_sens*tr)))
+      # exp3 = np.dot(np.dot((fs*(T_cte - num_sens)),snrs.transpose()), C_inv.transpose())- np.dot(predicted, np.linalg.norm(np.dot( C_inv,snrs), ord=1))
+      # exp4 = np.dot(np.dot(np.dot((2*fs*(T_cte - num_sens*tr)), snrs.transpose()), C_inv.transpose()), snrs)
+      #p_0 = pi_0*cls.Q(exp1/exp2)
+      #p_1 = pi_1*cls.Q(exp3/exp4)     
       loss = p_0 + p_1
       print(loss)
       
@@ -66,7 +75,9 @@ class DNNModelP2(DNNModel):
   
     @staticmethod  
     def Q(x):
-        return 0.5-0.5*sp.erf(x/math.sqrt(2))
+        value = tf.cast(x, tf.float32)
+        return 0.5-0.5*tf.math.erf(tf.cast(value/ math.sqrt(2),tf.float32))
+
     
 
     @staticmethod
@@ -94,7 +105,7 @@ class DNNModelP2(DNNModel):
                 model.add(LeakyReLU(alpha=0.05))
                 model.add(layers.Dropout(0.2))
                 model.add(BatchNormalization())
-                model.add(Dense(1, activation='softmax',name='last_layer'))
+                model.add(Dense(num_sens, activation='softmax',name='last_layer'))
                 model._name = 'dropout'
                 
         if choice == "dropout_Rl1":           
@@ -114,7 +125,7 @@ class DNNModelP2(DNNModel):
                 model.add(LeakyReLU(alpha=0.001))
                 model.add(layers.Dropout(0.2))
                 model.add(BatchNormalization())
-                model.add(Dense(1, activation='softmax',name='last_layer'))
+                model.add(Dense(num_sens, activation='softmax',name='last_layer'))
                 model._name = 'Dropout_Model_Rl1'
      
         if choice == "dropout_Rl2":           
@@ -134,7 +145,7 @@ class DNNModelP2(DNNModel):
                 model.add(LeakyReLU(alpha=0.001))
                 model.add(layers.Dropout(0.2))
                 model.add(BatchNormalization())
-                model.add(Dense(1, activation='softmax',name='last_layer'))
+                model.add(Dense(num_sens, activation='softmax',name='last_layer'))
                 model._name = 'Dropout_Model_Rl2'            
                 
         if choice == "linear":           
@@ -154,7 +165,7 @@ class DNNModelP2(DNNModel):
                 model.add(LeakyReLU(alpha=0.01))
                 model.add(layers.Dropout(0.2))
                 model.add(BatchNormalization())
-                model.add(Dense(1, activation='linear',
+                model.add(Dense(num_sens, activation='linear',
                                 name='last_layer'))
                 model._name = 'Linear_Model'              
                 
