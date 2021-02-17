@@ -34,7 +34,7 @@ def main():
 
     # history_dropout_P1 = DNNModelP1.train_model(model_dropout_P1, X_train, X_val, y_train, y_val, DNNModelP1.loss_fn_P1)
     # history_R1_P1 = DNNModelP1.train_model(model_R1_P1, X_train, X_val, y_train, y_val, DNNModelP1.loss_fn_P1)
-    # history_R2_P1 = DNNModelP1.train_model(model_R2_P1, X_train, X_val, y_train, y_val, DNNModelP1.loss_fn_P1)
+    # history_R2_P1 = DNNModelP1.train_model(model_R2_P1, X_train, X_val, y_train, y_val, DNNModelP1.loss_fn_P1) 
 
     # DNNModelP1.eval_metric(model_dropout_P1, history_dropout_P1, "loss")
     # DNNModelP1.eval_metric(model_R1_P1, history_R1_P1, "loss")
