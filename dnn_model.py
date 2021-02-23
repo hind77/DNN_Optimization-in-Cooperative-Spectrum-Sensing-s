@@ -63,7 +63,7 @@ class DNNModel:
   
     @staticmethod
     def eval_metric(model, history: np.ndarray,
-                    metric_name: str) -> np.ndarray:
+                    metric_name: str, problem_id: str) -> np.ndarray:
         '''
         Function to evaluate a trained model on a chosen metric. 
         Training and validation metric are plotted in a
@@ -89,7 +89,7 @@ class DNNModel:
         ax.set_xlabel('Epoch number')
         ax.set_ylabel(metric_name)
         #plt.show()  
-        plt.savefig('Loss ' + model.name +'.pdf')
+        plt.savefig('Loss '+model.name +' for '+problem_id +'.pdf')
         plt.close()
     
     @staticmethod    
@@ -99,7 +99,7 @@ class DNNModel:
                        history_2: np.ndarray, 
                        history_3: np.ndarray, 
                       
-                       metric: str):
+                       metric: str, problem_id: str):
     
         '''
         Function to compare a metric between two models 
@@ -135,10 +135,10 @@ class DNNModel:
         ax.margins(x=0,y=0)
         plt.xlabel('Epoch number')
         plt.ylabel(metric_label)
-        plt.title('Comparing ' + metric_label + ' between models')
+        plt.title('Comparing ' + metric_label + ' between models for '+ problem_id)
         plt.legend()
         #plt.show()
-        plt.savefig('Comparing ' + metric_label + ' between models' +'.pdf')
+        plt.savefig('Comparing ' + metric_label + ' between models'+ ' for the problem '+ problem_id +'.pdf')
         plt.close()
         
     

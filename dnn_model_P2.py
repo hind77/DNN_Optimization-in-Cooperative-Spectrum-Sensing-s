@@ -48,14 +48,20 @@ class DNNModelP2(DNNModel):
       print("snrs shape",snrs_tf.shape)
       C = tf.linalg.tensor_diag(1+2*snrs_tf)
       C_inv = tf.linalg.inv(C)
+      print("c_inv shape",C_inv.shape)
+      zero_tensor = tf.zeros((640,640))
+      epsilon = 0.05
+      epsilon_tensor = tf.fill((640, 640), epsilon)
+      tf.debugging.assert_none_equal(epsilon_tensor, zero_tensor, message="there is a null value here in epsilon tensor")
       exp1 = tf.math.multiply(predicted,tf.norm(tf.math.multiply(C_inv,snrs_tf), ord=1, axis=None))-tf.math.multiply(tf.math.multiply(fs*(T_cte - num_sens*tr),tf.keras.backend.transpose(snrs_tf)),tf.keras.backend.transpose(C_inv)) 
       exp2 = tf.linalg.norm(C*snrs_tf, ord=1)* math.sqrt(2*fs*(T_cte - num_sens*tr))
       exp3 = fs*(T_cte - num_sens*tr)*tf.keras.backend.transpose(snrs_tf)*tf.keras.backend.transpose(C_inv)- predicted*tf.linalg.norm(C_inv*snrs_tf, ord=1)
-      exp4 = math.sqrt(2*fs*(T_cte - num_sens*tr))*tf.math.sqrt(tf.keras.backend.transpose(snrs_tf)*tf.keras.backend.transpose(C_inv)*snrs_tf)  
-      zero_tensor = tf.zeros((640,))
+      exp4 = math.sqrt(2*fs*(T_cte - num_sens*tr))*tf.math.sqrt((tf.keras.backend.transpose(snrs_tf)+epsilon_tensor)*(tf.keras.backend.transpose(C_inv)+epsilon_tensor)*snrs_tf)  
+      test = tf.keras.backend.transpose(C_inv)+epsilon_tensor
+      tf.debugging.assert_none_equal(test, zero_tensor, message="there is a null value here in test tensor")
       tf.debugging.assert_non_negative(exp4, message="there is a negative value in the tensor")   
       tf.debugging.assert_none_equal(snrs_tf, zero_tensor, message="there is a null value here in snrs_tf")
-      tf.debugging.assert_none_equal(tf.keras.backend.transpose(C_inv), zero_tensor, message="there is a null value here in transpose of C_inv")
+      #tf.debugging.assert_none_equal(tf.keras.backend.transpose(C_inv), zero_tensor, message="there is a null value here in transpose of C_inv")
       tf.debugging.assert_none_equal(exp4, zero_tensor, message="there is a null value here in exp4")
 
       p_0 = tf.math.multiply(pi_0,cls.Q(exp1/exp2))
