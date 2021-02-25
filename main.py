@@ -21,7 +21,11 @@ def main():
     with open('trainData.data', 'rb') as filehandle:
         snrs_train = np.asarray(pickle.load(filehandle))
         snrs_train = snrs_train.reshape(num_samples,10)
+    #to stock data
+    # snrs_train = np.array(ChannelModel.ch_gen(num_samples)['snrs'])
     
+    # with open('trainData.data', 'wb') as filehandle: 
+    #     pickle.dump(snrs_train, filehandle)
     
     signal_power = np.array(ChannelModel.ch_gen(num_samples)['power'])
     snrs_test = np.array(ChannelModel.ch_gen(num_samples)['snrs'])
@@ -29,39 +33,41 @@ def main():
     
     #the model for the first problem(p1) that provided weights to maximize the deflection coef
     problem1_id = 'P1'
-    model_dropout_P1 = DNNModelP1.choose_model_P1(DNNModelP1.get_model, "dropout")
+    
+    #model_dropout_P1 = DNNModelP1.choose_model_P1(DNNModelP1.get_model, "dropout")
     model_R1_P1 = DNNModelP1.choose_model_P1(DNNModelP1.get_model, "dropout_Rl1")
     model_R2_P1 = DNNModelP1.choose_model_P1(DNNModelP1.get_model, "dropout_Rl2")
 
-    history_dropout_P1 = DNNModelP1.train_model(model_dropout_P1, X_train, X_val, y_train, y_val, DNNModelP1.loss_fn_P1)
+    #history_dropout_P1 = DNNModelP1.train_model(model_dropout_P1, X_train, X_val, y_train, y_val, DNNModelP1.loss_fn_P1)
     history_R1_P1 = DNNModelP1.train_model(model_R1_P1, X_train, X_val, y_train, y_val, DNNModelP1.loss_fn_P1)
     history_R2_P1 = DNNModelP1.train_model(model_R2_P1, X_train, X_val, y_train, y_val, DNNModelP1.loss_fn_P1) 
 
-    DNNModelP1.eval_metric(model_dropout_P1, history_dropout_P1, "loss", problem1_id)
+    #DNNModelP1.eval_metric(model_dropout_P1, history_dropout_P1, "loss", problem1_id)
     DNNModelP1.eval_metric(model_R1_P1, history_R1_P1, "loss", problem1_id)
     DNNModelP1.eval_metric(model_R2_P1, history_R2_P1, "loss", problem1_id)
 
-    DNNModelP1.compare_models(model_dropout_P1, model_R1_P1, model_R2_P1,  history_dropout_P1, history_R1_P1, history_R2_P1, "val_loss", problem1_id)
+    DNNModelP1.compare_models( model_R1_P1, model_R2_P1, history_R1_P1, history_R2_P1, "val_loss", problem1_id)
     
-    # the model for the second problem(p2) to get the optimal threshold to minimize the error function
-    # problem2_id = 'P2'
-    # model_dropout_P2 = DNNModelP2.choose_model_P2(DNNModelP2.get_model, "dropout")
-    # model_R1_P2 = DNNModelP2.choose_model_P2(DNNModelP2.get_model, "dropout_Rl1")
-    # model_R2_P2 = DNNModelP2.choose_model_P2(DNNModelP2.get_model, "dropout_Rl2")
+    #the model for the second problem(p2) to get the optimal threshold to minimize the error function
+    problem2_id = 'P2'
+    
+    #model_dropout_P2 = DNNModelP2.choose_model_P2(DNNModelP2.get_model, "dropout")
+    model_R1_P2 = DNNModelP2.choose_model_P2(DNNModelP2.get_model, "dropout_Rl1")
+    model_R2_P2 = DNNModelP2.choose_model_P2(DNNModelP2.get_model, "dropout_Rl2")
 
-    # history_dropout_P2 = DNNModelP2.train_model(model_dropout_P2, X_train, X_val, y_train, y_val, DNNModelP2.loss_fn_P2)
-    # history_R1_P2 = DNNModelP2.train_model(model_R1_P2, X_train, X_val, y_train, y_val, DNNModelP2.loss_fn_P2)
-    # history_R2_P2 = DNNModelP2.train_model(model_R2_P2, X_train, X_val, y_train, y_val, DNNModelP2.loss_fn_P2)
+    #history_dropout_P2 = DNNModelP2.train_model(model_dropout_P2, X_train, X_val, y_train, y_val, DNNModelP2.loss_fn_P2)
+    history_R1_P2 = DNNModelP2.train_model(model_R1_P2, X_train, X_val, y_train, y_val, DNNModelP2.loss_fn_P2)
+    history_R2_P2 = DNNModelP2.train_model(model_R2_P2, X_train, X_val, y_train, y_val, DNNModelP2.loss_fn_P2)
 
-    # DNNModelP2.eval_metric(model_dropout_P2, history_dropout_P2, "loss", problem2_id)
-    # DNNModelP2.eval_metric(model_R1_P2, history_R1_P2, "loss", problem2_id)
-    # DNNModelP2.eval_metric(model_R2_P2, history_R2_P2, "loss", problem2_id)
+    #DNNModelP2.eval_metric(model_dropout_P2, history_dropout_P2, "loss", problem2_id)
+    DNNModelP2.eval_metric(model_R1_P2, history_R1_P2, "loss", problem2_id)
+    DNNModelP2.eval_metric(model_R2_P2, history_R2_P2, "loss", problem2_id)
 
-    # DNNModelP2.compare_models(model_dropout_P2, model_R1_P2, model_R2_P2,  history_dropout_P2, history_R1_P2, history_R2_P2, "val_loss", problem2_id)
+    DNNModelP2.compare_models(model_R1_P2, model_R2_P2, history_R1_P2, history_R2_P2, "val_loss", problem2_id)
         
-    # spectrum_sensing = SpectrumSensing()
+    #spectrum_sensing = SpectrumSensing()
     
-    # spectrum_sensing.generate_weights(model_R2, snrs_test, signal_power)
+    #spectrum_sensing.generate_weights(model_R2, snrs_test, signal_power)
 
 
    

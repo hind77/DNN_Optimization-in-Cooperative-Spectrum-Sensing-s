@@ -54,7 +54,7 @@ class DNNModel:
         opt = tf.keras.optimizers.Adam(learning_rate=0.001)
         callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=50) 
         model.compile(loss = loss_fn , optimizer=opt)
-        history = model.fit(X_train,y_train,batch_size=batch_s,epochs=200,
+        history = model.fit(X_train,y_train,batch_size=batch_s,epochs=20,
                             validation_data=(X_val,y_val),
                             callbacks=[callback])
         return history
@@ -94,10 +94,10 @@ class DNNModel:
     
     @staticmethod    
     def compare_models(model_1, model_2, 
-                       model_3, 
+                       
                        history_1: np.ndarray,
                        history_2: np.ndarray, 
-                       history_3: np.ndarray, 
+                        
                       
                        metric: str, problem_id: str):
     
@@ -114,7 +114,7 @@ class DNNModel:
         '''    
         metric_1 = history_1.history[metric]
         metric_2 = history_2.history[metric]
-        metric_3 = history_3.history[metric]
+        #metric_3 = history_3.history[metric]
         #metric_4 = history_4.history[metric]
         
         metrics_dict = {
@@ -130,7 +130,7 @@ class DNNModel:
         ax = plt.axes()    
         ax.plot(metric_1, linestyle= 'solid', color='orange', label=model_1.name)
         ax.plot(metric_2, linestyle= 'solid', color='green', label=model_2.name)
-        ax.plot(metric_3, linestyle= 'solid', color='blue', label = model_3.name)
+        #ax.plot(metric_3, linestyle= 'solid', color='blue', label = model_3.name)
         #ax.plot(metric_4, linestyle= 'solid', color='black', label = model_4.name)
         ax.margins(x=0,y=0)
         plt.xlabel('Epoch number')
