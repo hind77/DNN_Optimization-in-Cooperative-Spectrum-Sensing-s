@@ -27,6 +27,7 @@ class ChannelModel:
         dist_su_su_vec = np.linalg.norm(dist_su_su_vec, axis=2)
         return dist_pr_su_vec, dist_su_su_vec
     
+    
     @staticmethod
     def get_channel_gain(dist_pr_su_vec: np.ndarray) -> np.ndarray:
     
@@ -44,6 +45,7 @@ class ChannelModel:
         pu_ch_gain_db = - pl_const - pl_alpha * np.log10(dist_pr_su_vec) # primary channel gain
         return 10 ** (pu_ch_gain_db / 10)
     
+    
     @staticmethod
     def get_secondary_correlation(dist_su_su_vec: np.ndarray ) -> np.ndarray:
         '''
@@ -56,6 +58,7 @@ class ChannelModel:
             secondary users correlation
         '''    
         return np.exp(-dist_su_su_vec / d_ref)
+
 
     @staticmethod
     def get_shadowing(su_cor: np.ndarray, num_sens: int) -> np.ndarray:
@@ -73,6 +76,7 @@ class ChannelModel:
             shadowing_dB = sh_sigma * np.random.multivariate_normal(np.zeros([num_sens]), su_cor)
             return 10 ** (shadowing_dB / 10)
 
+
     @staticmethod
     def get_multiPath_Fading(num_sens: int) -> np.ndarray:
         '''
@@ -86,6 +90,7 @@ class ChannelModel:
         '''     
         multi_fading = 0.5 * np.random.randn(num_sens) ** 2 + 0.5 * np.random.randn(num_sens) ** 2
         return multi_fading ** 0.5
+
     
     @classmethod
     def ch_gen(cls, num_samples: int) -> np.ndarray:

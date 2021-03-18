@@ -30,28 +30,27 @@ class DNNModelP2(DNNModel):
             predicted: the output threshold of the model
     
         Output:
-            loss value   
-          
+            loss value            
       """  
       # proto_tensor = tf.make_tensor_proto(predicted)
       # predicted = tf.make_ndarray(proto_tensor)
       # print(predicted)
-      
+      print("this is the snrs shape:", snrs.shape)
+      print("this is the predicted shape:", predicted.shape)
+      dim=batch_s * num_sens
      
-      dim=batch_s*num_sens
-      #snrs_np = np.reshape(snrs, [dim])
-      predicted=tf.reshape(predicted,[dim])
-      
+      predicted = predicted * tf.ones((1,num_sens))
+      predicted=tf.reshape(predicted,[dim])  
+      print("this is the predicted after reshape", predicted.shape)
+      #snrs_tf = tf.slice(snrs,[0,0,0],dim)
       snrs_tf = tf.reshape(snrs , [dim])
+      print("this is snrs after reshape", snrs_tf.shape)
       
-      print("predicted shape", predicted.shape)
-      print("snrs shape",snrs_tf.shape)
       C = tf.linalg.tensor_diag(1+2*snrs_tf)
       C_inv = tf.linalg.inv(C)
-      print("c_inv shape",C_inv.shape)
-      zero_tensor = tf.zeros((640,640))
-      epsilon = 0.05
-      epsilon_tensor = tf.fill((640, 640), epsilon)
+      zero_tensor = tf.zeros((dim,dim))
+      epsilon = 0.05 # to avoid the division by 0 
+      epsilon_tensor = tf.fill((dim, dim), epsilon)
       tf.debugging.assert_none_equal(epsilon_tensor, zero_tensor, message="there is a null value here in epsilon tensor")
       exp1 = tf.math.multiply(predicted,tf.norm(tf.math.multiply(C_inv,snrs_tf), ord=1, axis=None))-tf.math.multiply(tf.math.multiply(fs*(T_cte - num_sens*tr),tf.keras.backend.transpose(snrs_tf)),tf.keras.backend.transpose(C_inv)) 
       exp2 = tf.linalg.norm(C*snrs_tf, ord=1)* math.sqrt(2*fs*(T_cte - num_sens*tr))
@@ -63,36 +62,21 @@ class DNNModelP2(DNNModel):
       tf.debugging.assert_none_equal(snrs_tf, zero_tensor, message="there is a null value here in snrs_tf")
       #tf.debugging.assert_none_equal(tf.keras.backend.transpose(C_inv), zero_tensor, message="there is a null value here in transpose of C_inv")
       tf.debugging.assert_none_equal(exp4, zero_tensor, message="there is a null value here in exp4")
-
       p_0 = tf.math.multiply(pi_0,cls.Q(exp1/exp2))
-      p_1 = tf.math.multiply(pi_1,cls.Q(exp3/exp4))
-      
-      #p_1 = tf.math.multiply(pi_1,cls.Q(exp3/exp4))       
-      # loss = (p_0 + p_1)
-      #loss = (exp1/exp2)+(exp3/exp4)
-      # dim=batch_s*num_sens
-      # snrs = np.reshape(snrs, [dim])
-      # predicted = np.reshape(snrs,[dim])
-      # C = np.diag(1+2*snrs)
-      # C_inv = np.linalg.inv(C)
-      # exp1 = np.dot(predicted, np.linalg.norm(np.dot( C_inv,snrs), ord=1))-np.dot(np.dot(fs*(T_cte - num_sens*tr), snrs.transpose()), C.transpose())
-      # exp2 = np.dot(np.linalg.norm(np.dot( C,snrs), ord=1),math.sqrt(2*fs*(T_cte - num_sens*tr)))
-      # exp3 = np.dot(np.dot((fs*(T_cte - num_sens)),snrs.transpose()), C_inv.transpose())- np.dot(predicted, np.linalg.norm(np.dot( C_inv,snrs), ord=1))
-      # exp4 = np.dot(np.dot(np.dot((2*fs*(T_cte - num_sens*tr)), snrs.transpose()), C_inv.transpose()), snrs)
-      #p_0 = pi_0*cls.Q(exp1/exp2)
-      #p_1 = pi_1*cls.Q(exp3/exp4)     
+      p_1 = tf.math.multiply(pi_1,cls.Q(exp3/exp4)) 
       loss = p_0 + p_1
-      print(loss)
-      
+     
       return loss / batch_s
   
     @staticmethod  
     def Q(x):
+        """
+        the Q-function
+        """
         value = tf.cast(x, tf.float32)
         return 0.5-0.5*tf.math.erf(tf.cast(value/ math.sqrt(2),tf.float32))
 
     
-
     @staticmethod
     def choose_model_P2(init_model, choice: str):
         """ 
@@ -104,61 +88,61 @@ class DNNModelP2(DNNModel):
         if choice == "dropout":            
                 model.add(Dense(num_sens, kernel_initializer=initializer))
                 model.add(LeakyReLU(alpha=0.05))
-                model.add(layers.Dropout(0.2))
+                #model.add(layers.Dropout(0.2))
                 #model.add(BatchNormalization())
                 model.add(Dense(64))
                 model.add(LeakyReLU(alpha=0.05))
-                model.add(layers.Dropout(0.2))
+                #model.add(layers.Dropout(0.2))
                 #model.add(BatchNormalization())
                 model.add(Dense(32))
                 model.add(LeakyReLU(alpha=0.05))
-                model.add(layers.Dropout(0.2))
+                #model.add(layers.Dropout(0.2))
                 #model.add(BatchNormalization())
-                model.add(Dense(16))
-                model.add(LeakyReLU(alpha=0.05))
-                model.add(layers.Dropout(0.2))
+                model.add(Dense(16, activation='softmax'))
+                
+                #model.add(layers.Dropout(0.2))
                 #model.add(BatchNormalization())
-                model.add(Dense(num_sens, activation='relu',name='last_layer'))
+                model.add(Dense(1, activation='sigmoid',name='last_layer'))
                 model._name = 'dropout'
                 
         if choice == "dropout_Rl1":           
                 model.add(Dense(num_sens, kernel_initializer=initializer))
-                model.add(LeakyReLU(alpha=0.001))
+                model.add(LeakyReLU(alpha=0.5))
                 model.add(layers.Dropout(0.2))
                 #model.add(BatchNormalization())
                 model.add(Dense(64, kernel_regularizer=regularizers.l1(0.0005)))
-                model.add(LeakyReLU(alpha=0.001))
+                model.add(LeakyReLU(alpha=0.5))
                 model.add(layers.Dropout(0.2))
                 #model.add(BatchNormalization())
                 model.add(Dense(32, kernel_regularizer=regularizers.l1(0.0005)))
-                model.add(LeakyReLU(alpha=0.001))
+                model.add(LeakyReLU(alpha=0.5))
                 model.add(layers.Dropout(0.2))
                 #model.add(BatchNormalization())
-                model.add(Dense(16, kernel_regularizer=regularizers.l1(0.0005)))
-                model.add(LeakyReLU(alpha=0.001))
+                model.add(Dense(16, activation='relu', kernel_regularizer=regularizers.l1(0.0005)))
+                
                 model.add(layers.Dropout(0.2))
                 #model.add(BatchNormalization())
-                model.add(Dense(num_sens, activation='relu',name='last_layer'))
+                model.add(Dense(1, activation='sigmoid',name='last_layer'))
                 model._name = 'Dropout_Model_Rl1'
      
         if choice == "dropout_Rl2":           
-                model.add(Dense(num_sens, kernel_initializer=initializer))
-                model.add(LeakyReLU(alpha=0.001))
+                model.add(Dense(num_sens,activation='relu', kernel_initializer=initializer))
+                #model.add(LeakyReLU(alpha=0.005))
                 model.add(layers.Dropout(0.2))
                 #model.add(BatchNormalization())
-                model.add(Dense(64,kernel_regularizer=regularizers.l2(0.0005)))
-                model.add(LeakyReLU(alpha=0.001))
+                model.add(Dense(64, activation='relu', kernel_regularizer=regularizers.l2(0.0005)))
+                #model.add(LeakyReLU(alpha=0.005))
                 model.add(layers.Dropout(0.2))
                 #model.add(BatchNormalization())
-                model.add(Dense(32,kernel_regularizer=regularizers.l2(0.0005)))
-                model.add(LeakyReLU(alpha=0.001))
+                model.add(Dense(32,activation='relu', kernel_regularizer=regularizers.l2(0.0005)))
+                #model.add(LeakyReLU(alpha=0.005))
                 model.add(layers.Dropout(0.2))
                 #model.add(BatchNormalization())
-                model.add(Dense(16,kernel_regularizer=regularizers.l2(0.0005)))
-                model.add(LeakyReLU(alpha=0.001))
+                model.add(Dense(16,activation='relu',kernel_regularizer=regularizers.l2(0.0005)))
+                #model.add(LeakyReLU(alpha=0.005))
                 model.add(layers.Dropout(0.2))
                 #model.add(BatchNormalization())
-                model.add(Dense(num_sens, activation='relu',name='last_layer'))
+                model.add(Dense(1, activation='sigmoid',name='last_layer'))
                 model._name = 'Dropout_Model_Rl2'            
                 
         if choice == "linear":           

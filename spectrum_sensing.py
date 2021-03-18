@@ -17,23 +17,34 @@ from texttable import Texttable
 class SpectrumSensing:
     
     def define_users_snrs(self, snrs)-> dict:
+        
         '''
         Function to return a dictionary that representes each user with its signal
+        
+          Parameters: 
+              secondaru users snrs
+          Outputs:
+              users snrs dictionary 
         
         '''    
         signals = dict()
         for i in range(0,num_sens):
-            signals[i]= snrs[i]
-            
+            signals[i]= snrs[i]            
         return signals
-
-
 
 
     def get_local_decisions(self, static,thresh,decisions)-> dict:
         
       '''
         Function to return a dictionary that representes each user with its decisions
+        
+          Prameters:
+              static: the statistic test here we consider the snrs
+              thresh: threshold associated to SUs
+              decisions: the binary decisions provided by each SU
+         Output:
+             local decision for each secondary user
+              
         
       '''       
       for k,v in static.items():
@@ -43,25 +54,31 @@ class SpectrumSensing:
           decisions[k].append(0)
       #print("loop decisioon",decisions)
       return decisions
-
+      
+  
     def get_cooperative_decision(self, static,thresh,weights)-> np.ndarray:
       '''
         Function to return a cooperative decision
+        
+         Prameters:
+              static: the statistic test here we consider the snrs
+              thresh: threshold associated to SUs
+              weights: SUs'weights
+         Output:
+             the cooperative decision
         
       '''  
       cooperative_static = list()   
       for k,v in static.items():
           
-          cooperative_static.append(weights[k]*v)
-          
+          cooperative_static.append(weights[k]*v)    
       return int(sum(cooperative_static)> thresh)
   
-      def get_cooperatieve_pd(self, cooperative_decisions)-> np.ndarray:
-        
+    
+      def get_cooperatieve_pd(self, cooperative_decisions)-> np.ndarray:        
         return sum(cooperative_decisions)/rounds
      
       
-
       def local_pd(self, decisions: dict ,pds: np.ndarray)-> np.ndarray:
         
               
@@ -72,10 +89,10 @@ class SpectrumSensing:
           pd = dict()
           for k,v in decisions.items():
             pd[k] = sum(v)/rounds
-            pds[k].append(sum(v)/rounds)
-          
+            pds[k].append(sum(v)/rounds)          
           return pd
-      
+    
+        
     def compute_euclidian_distance(self, numerical_weights, dnn_weights):
         
         '''
@@ -104,6 +121,7 @@ class SpectrumSensing:
                     ['dnn_coef', dnn_coef], ['numerical_coef', numerical_coef], 
                     ['mathematical_coef',math_coef]])
         print(table.draw())
+     
         
     def generate_weights(self,model, snrs_test,
                        signal_power) -> np.ndarray :
@@ -134,9 +152,23 @@ class SpectrumSensing:
                                                              snrs_test[k])            
             numerical_dm_square = MathematicalModel.compute_deflection_coef(numerical_weights,
                                                                             snrs_test[k])
+            
             #self.benshmarking_table(DNN_dm_square, mathematical_dm_square, numerical_dm_square)
             print("DNN deflection coef",DNN_dm_square)
             print("numerical deflection coef",numerical_dm_square)
             print("mathematical deflection coef",mathematical_dm_square_2007)
             print("mathematical deflection coef",mathematical_dm_square_2016)
+     
             
+    def generate_thresholds(self, snrs_test, model_R1, model_R2, model_d) -> np.ndarray :
+        thresholds_d = model_d.predict(snrs_test)
+        thresholds_R1 = model_R1.predict(snrs_test)
+        thresholds_R2 = model_R2.predict(snrs_test)
+        dnn_thresholds_d = thresholds_d[0]
+        dnn_thresholds_R1 = thresholds_R1[0]
+        dnn_thresholds_R2 = thresholds_R2[0]
+        numerical_thresholds = MathematicalModel.compute_numerical_thresholds(snrs_test[0])
+        print("DNN thresholds for dropeout model ",dnn_thresholds_d)
+        print("DNN thresholds for R1 model ",dnn_thresholds_R1)
+        print("DNN thresholds for R2 model ",dnn_thresholds_R2)
+        print("numerical thresholds",numerical_thresholds)        

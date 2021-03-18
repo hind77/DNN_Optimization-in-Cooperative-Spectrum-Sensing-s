@@ -11,6 +11,9 @@ import math
 from scipy.optimize import minimize, rosen, rosen_der
 from numpy import linalg as LA
 import itertools
+from numpy.linalg import multi_dot
+from scipy import special
+import random
 
 class MathematicalModel:
     
@@ -43,6 +46,8 @@ class MathematicalModel:
         w1 = cls.real(w1)
         w1 = np.array(w1)     
         return w1
+    
+    
     @classmethod
     def new_paper_mathematical_weights(cls,snrs: np.ndarray)-> np.ndarray:
     
@@ -64,6 +69,8 @@ class MathematicalModel:
         w_opt = cls.real(w_opt)
         w_opt = np.array(w_opt)   
         return w_opt
+    
+    
     @staticmethod
     def compute_deflection_coef(weights: np.ndarray, snrs: np.ndarray)-> float:
         '''
@@ -90,8 +97,19 @@ class MathematicalModel:
         dm_square = t/b
         
         return dm_square
+    
+    
     @staticmethod
-    def compute_weights_using_deflection_coef(snrs) -> np.ndarray:       
+    def compute_weights_using_deflection_coef(snrs) -> np.ndarray:
+        '''
+        This function is the numerical computation of the weights using the minimization function
+        
+         Parameters:
+             snrs: secondary users snrs
+         output:
+             the optimal weights
+        
+        '''
         #fun = lambda x: ((x[i]*nu[i] for i in range(0,len(nu)))**2)/(4*((n+nu[i])*x[i]**2 for i in range(0,len(nu))))
         n = 50
         nu = snrs
@@ -103,21 +121,83 @@ class MathematicalModel:
         random_guess = tuple(list(random_guess[0]))
         res = minimize(fun, random_guess, method='SLSQP', bounds=bnds, constraints=constraint)
         return(res.x)
+    
+    
+    @staticmethod
+    def Q(x):
+        """
+        the Q-function
+        """
+        
+        return 0.5-0.5*special.erf(x/ math.sqrt(2))
+    
+    
+    @classmethod
+    def func(cls,x, *args):
+    
+        """
+        The optimization function from the 2016 paper
+        
+        """
+        snrs=np.array(args[0])
+
+        epsilon = 0.05 # to avoid the division by 0 
+        h = np.ones(num_sens)# I set h for ones to simplify the computation
+        h = h.reshape(10,1)# I reshape the snrs for matricial multiplication 
+        bold_one = np.identity(num_sens)
+        C = np.diag(1+2*snrs) # the C value from the formula diag{[1 +2snrs]}
+        C_inv = np.linalg.inv(C) # C_inv
+        snrs_s = snrs.reshape(10,1) 
+        exp1 = multi_dot([snrs_s.transpose(), C_inv.transpose(),h])
+        exp2 = np.linalg.norm(np.dot( C_inv,snrs_s), ord=1)
+        identity_vector = np.ones(num_sens)
+        identity_vector = identity_vector.reshape(10,1)
+        add = identity_vector+h       
+        exp3 = num_sens* multi_dot([snrs_s.transpose(), C_inv.transpose(),add])- (x*np.linalg.norm(np.dot( C_inv,snrs_s), ord=1))
+        exp4 = np.sqrt(multi_dot([snrs_s.transpose(), C_inv.transpose(), snrs_s])+epsilon)
+        t1 = np.divide(exp1, exp2)
+        t2 = np.divide(exp3, exp4)
+        p_0 = pi_0*cls.Q(x-(exp1/exp2))
+        p_1 = pi_1*cls.Q(exp3/exp4)
+        f = p_0 + p_1
+        return f[0][0]
+    
+    
+    @classmethod
+    def compute_numerical_thresholds(cls,snrs):
+        
+        '''
+        This function compute the numerical optimal thresholds using minimization
+        
+          Parameters:
+              snrs of the secondary users
+          Outputs:
+              numerical optimal thresholds
+        '''
+        bnds = ((0, 1),)  
+        #random_guess = np.random.dirichlet(np.ones(10)*1000.,size=1)
+        random_guess = random.choice(snrs)
+        #random_guess = tuple(list(random_guess[0])) 
+        constraint = ({'type': 'ineq', 'fun': lambda x:  x>0})
+        res = minimize(cls.func, random_guess,args=(snrs), method='SLSQP', bounds=bnds, constraints=constraint)
+        return res.x 
+     
+    
     @staticmethod
     def real(w1):
         return w1.real
+    
     
     @staticmethod
     def convert(lst): 
         return [[el] for el in lst]
     
-    @staticmethod
-    def sum_s(snrs, *x):        
     
+    @staticmethod
+    def sum_s(snrs, *x):            
         return sum(x, snrs)**2
+    
     @staticmethod
     def mul(snrs, *x): 
-
-        x= [s**2 for s in x]
- 
+        x= [s**2 for s in x] 
         return (4*snrs)*(x)     

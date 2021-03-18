@@ -33,9 +33,7 @@ class DNNModelP1(DNNModel):
           
       """      
     
-      dim=batch_s*num_sens
-    
-      
+      dim=batch_s*num_sens      
       t = tf.reduce_sum(tf.math.multiply(snrs,predicted))**2
       snrs = tf.reshape(snrs , [dim])
       predicted=tf.reshape(predicted,[dim])
@@ -50,7 +48,7 @@ class DNNModelP1(DNNModel):
       return loss / batch_s
   
     
-  
+
     @staticmethod
     def choose_model_P1(init_model, choice: str):
         """ 

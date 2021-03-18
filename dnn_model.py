@@ -53,17 +53,16 @@ class DNNModel:
         history = []
         opt = tf.keras.optimizers.Adam(learning_rate=0.001)
         callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=50) 
-        model.compile(loss = loss_fn , optimizer=opt)
+        model.compile(loss = loss_fn , optimizer=opt, metrics=['acc'])
         history = model.fit(X_train,y_train,batch_size=batch_s,epochs=20,
                             validation_data=(X_val,y_val),
                             callbacks=[callback])
         return history
     
-
   
     @staticmethod
     def eval_metric(model, history: np.ndarray,
-                    metric_name: str, problem_id: str) -> np.ndarray:
+                    metric_name: str,problem_id: str) -> np.ndarray:
         '''
         Function to evaluate a trained model on a chosen metric. 
         Training and validation metric are plotted in a
@@ -75,7 +74,9 @@ class DNNModel:
         Output:
             line chart with epochs of x-axis and metric on
             y-axis
-        '''    
+        '''   
+        for key in history.history.keys():
+            print(key)
         metric = history.history[metric_name]
         val_metric = history.history['val_' + metric_name] 
         plt.figure(2)
@@ -89,8 +90,9 @@ class DNNModel:
         ax.set_xlabel('Epoch number')
         ax.set_ylabel(metric_name)
         #plt.show()  
-        plt.savefig('Loss '+model.name +' for '+problem_id +'.pdf')
+        plt.savefig(metric_name+'metric in '+model.name +' for '+problem_id +'.pdf')
         plt.close()
+
     
     @staticmethod    
     def compare_models(model_1, model_2, 
