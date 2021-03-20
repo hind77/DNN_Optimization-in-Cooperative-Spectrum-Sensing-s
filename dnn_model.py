@@ -51,7 +51,7 @@ class DNNModel:
         
         """
         history = []
-        opt = tf.keras.optimizers.Adam(learning_rate=0.001)
+        opt = tf.keras.optimizers.Adam(learning_rate=0.0001)
         callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=50) 
         model.compile(loss = loss_fn , optimizer=opt, metrics=['acc'])
         history = model.fit(X_train,y_train,batch_size=batch_s,epochs=20,
@@ -90,7 +90,7 @@ class DNNModel:
         ax.set_xlabel('Epoch number')
         ax.set_ylabel(metric_name)
         #plt.show()  
-        plt.savefig(metric_name+'metric in '+model.name +' for '+problem_id +'.pdf')
+        plt.savefig(metric_name+' metric in '+model.name +' for '+problem_id +'.pdf')
         plt.close()
 
     
