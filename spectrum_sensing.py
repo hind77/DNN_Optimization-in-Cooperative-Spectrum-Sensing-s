@@ -160,15 +160,11 @@ class SpectrumSensing:
             print("mathematical deflection coef",mathematical_dm_square_2016)
      
             
-    def generate_thresholds(self, snrs_test, model_R1, model_R2, model_d) -> np.ndarray :
+    def generate_thresholds(self, snrs_test, model_d) -> np.ndarray :
         thresholds_d = model_d.predict(snrs_test)
-        thresholds_R1 = model_R1.predict(snrs_test)
-        thresholds_R2 = model_R2.predict(snrs_test)
+        print("this is the threshold d", thresholds_d)
         dnn_thresholds_d = thresholds_d[0]
-        dnn_thresholds_R1 = thresholds_R1[0]
-        dnn_thresholds_R2 = thresholds_R2[0]
+
         numerical_thresholds = MathematicalModel.compute_numerical_thresholds(snrs_test[0])
         print("DNN thresholds for dropeout model ",dnn_thresholds_d)
-        print("DNN thresholds for R1 model ",dnn_thresholds_R1)
-        print("DNN thresholds for R2 model ",dnn_thresholds_R2)
         print("numerical thresholds",numerical_thresholds)        
