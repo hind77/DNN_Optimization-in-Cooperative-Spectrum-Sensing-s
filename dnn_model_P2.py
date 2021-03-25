@@ -40,25 +40,34 @@ class DNNModelP2(DNNModel):
       dim=batch_s * num_sens
      
       predicted = predicted * tf.ones((1,num_sens))
-      predicted=tf.reshape(predicted,[dim])  
+      predicted=tf.reshape(predicted,[dim])
+      predicted = tf.math.abs(predicted)
       print("this is the predicted after reshape", predicted.shape)
       #snrs_tf = tf.slice(snrs,[0,0,0],dim)
       snrs_tf = tf.reshape(snrs , [dim])
+      snrs_tf = tf.math.abs(snrs_tf)
       print("this is snrs after reshape", snrs_tf.shape)
-      
+      tf.debugging.assert_non_negative(snrs_tf, message="there is a negative value in the tensor snrs_tf")
       C = tf.linalg.tensor_diag(1+2*snrs_tf)
+      C =tf.math.abs(C)
       C_inv = tf.linalg.inv(C)
+      C_inv =tf.math.abs(C_inv)
       zero_tensor = tf.zeros((dim,dim))
-      epsilon = 0.05 # to avoid the division by 0 
+      epsilon = 0.05# to avoid the division by 0 
       epsilon_tensor = tf.fill((dim, dim), epsilon)
       tf.debugging.assert_none_equal(epsilon_tensor, zero_tensor, message="there is a null value here in epsilon tensor")
       exp1 = tf.math.multiply(predicted,tf.norm(tf.math.multiply(C_inv,snrs_tf), ord=1, axis=None))-tf.math.multiply(tf.math.multiply(fs*(T_cte - num_sens*tr),tf.keras.backend.transpose(snrs_tf)),tf.keras.backend.transpose(C_inv)) 
       exp2 = tf.linalg.norm(C*snrs_tf, ord=1)* math.sqrt(2*fs*(T_cte - num_sens*tr))
       exp3 = fs*(T_cte - num_sens*tr)*tf.keras.backend.transpose(snrs_tf)*tf.keras.backend.transpose(C_inv)- predicted*tf.linalg.norm(C_inv*snrs_tf, ord=1)
-      exp4 = math.sqrt(2*fs*(T_cte - num_sens*tr))*tf.math.sqrt((tf.keras.backend.transpose(snrs_tf)+epsilon_tensor)*(tf.keras.backend.transpose(C_inv)+epsilon_tensor)*snrs_tf)  
+      ext = tf.math.sqrt((tf.keras.backend.transpose(snrs_tf)+epsilon_tensor)*(tf.keras.backend.transpose(C_inv)+epsilon_tensor)*snrs_tf) 
+      exp4 = math.sqrt(2*fs*(T_cte - num_sens*tr))* ext  
       test = tf.keras.backend.transpose(C_inv)+epsilon_tensor
       tf.debugging.assert_none_equal(test, zero_tensor, message="there is a null value here in test tensor")
-      tf.debugging.assert_non_negative(exp4, message="there is a negative value in the tensor")   
+      tf.debugging.assert_non_negative(tf.keras.backend.transpose(snrs_tf), message="there is a negative value in the tf.keras.backend.transpose(snrs_tf)")
+      tf.debugging.assert_non_negative(tf.keras.backend.transpose(C_inv), message="there is a negative value in the tf.keras.backend.transpose(C_inv)")
+      tf.debugging.assert_non_negative(snrs_tf, message="there is a negative value in the snrs_tf")
+      tf.debugging.assert_non_negative(ext, message="there is a negative value in the ext")
+      tf.debugging.assert_non_negative(exp4, message="there is a negative value in the tensor")      
       tf.debugging.assert_none_equal(snrs_tf, zero_tensor, message="there is a null value here in snrs_tf")
       #tf.debugging.assert_none_equal(tf.keras.backend.transpose(C_inv), zero_tensor, message="there is a null value here in transpose of C_inv")
       tf.debugging.assert_none_equal(exp4, zero_tensor, message="there is a null value here in exp4")
@@ -86,24 +95,25 @@ class DNNModelP2(DNNModel):
         model, initializer = init_model()
         
         if choice == "dropout":            
-                model.add(Dense(num_sens,activation='relu', kernel_initializer=initializer))
-                #model.add(LeakyReLU(alpha=0.001))
+                model.add(Dense(num_sens, kernel_initializer=initializer))
+                model.add(LeakyReLU(alpha=0.005))
                 model.add(layers.Dropout(0.3))
                 #model.add(BatchNormalization())
-                model.add(Dense(64, activation='relu'))
-                #model.add(LeakyReLU(alpha=0.001))
+                model.add(Dense(64))
+                model.add(LeakyReLU(alpha=0.005))
                 model.add(layers.Dropout(0.3))
                 #model.add(BatchNormalization())
-                model.add(Dense(32, activation='relu'))
-                #model.add(LeakyReLU(alpha=0.001))
+                model.add(Dense(32))
+                model.add(LeakyReLU(alpha=0.005))
                 model.add(layers.Dropout(0.3))
                 #model.add(BatchNormalization())
-                model.add(Dense(16, activation='relu'))
-                #model.add(LeakyReLU(alpha=0.001))
+                model.add(Dense(16))
+                model.add(LeakyReLU(alpha=0.005))
                 
                 model.add(layers.Dropout(0.3))
                 #model.add(BatchNormalization())
-                model.add(Dense(1, activation= 'relu', name='last_layer'))
+                model.add(Dense(1, name='last_layer'))
+                model.add(LeakyReLU(alpha=0.005))
                 
                 model._name = 'dropout'
                 

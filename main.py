@@ -29,7 +29,9 @@ def main():
     
     signal_power = np.array(ChannelModel.ch_gen(num_samples)['power'])
     snrs_test = np.array(ChannelModel.ch_gen(num_samples)['snrs'])
-    print("snrs test", snrs_test)
+    #snrs_test = snrs_test * math.pow(10,25)
+   # snrs_train = snrs_train * math.pow(10,25)
+    print("snrs train", snrs_train)
     X_train, X_val, y_train, y_val = train_test_split(snrs_train, snrs_train, test_size=0.30)
     
     #the model for the first problem(p1) that provided weights to maximize the deflection coef
@@ -53,6 +55,7 @@ def main():
     #DNNModelP1.compare_models( model_R1_P1, model_R2_P1, history_R1_P1, history_R2_P1, "val_acc", problem1_id)
     #the model for the second problem(p2) to get the optimal threshold to minimize the error function
     problem2_id = 'P2'
+    print
     print("this is the xtrain shape", X_train.shape)
     model_dropout_P2 = DNNModelP2.choose_model_P2(DNNModelP2.get_model, "dropout")
     #model_R1_P2 = DNNModelP2.choose_model_P2(DNNModelP2.get_model, "dropout_Rl1")

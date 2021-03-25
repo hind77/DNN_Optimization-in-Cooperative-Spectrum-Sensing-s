@@ -162,7 +162,6 @@ class SpectrumSensing:
             
     def generate_thresholds(self, snrs_test, model_d) -> np.ndarray :
         thresholds_d = model_d.predict(snrs_test)
-        print("this is the threshold d", thresholds_d)
         dnn_thresholds_d = thresholds_d[0]
 
         numerical_thresholds = MathematicalModel.compute_numerical_thresholds(snrs_test[0])
