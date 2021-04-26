@@ -21,61 +21,52 @@ from keras import regularizers
 class DNNModelP2(DNNModel):
     
     @classmethod
-    def loss_fn_P2(cls,snrs: np.ndarray, predicted) -> float:
-      """ 
-        This is a customized loss function
+    def loss_fn_P2_with_gain(cls,gain):
         
-        Parameters:
-            SNRs : the signal noise ratio
-            predicted: the output threshold of the model
-    
-        Output:
-            loss value            
-      """  
-      # proto_tensor = tf.make_tensor_proto(predicted)
-      # predicted = tf.make_ndarray(proto_tensor)
-      # print(predicted)
-      print("this is the snrs shape:", snrs.shape)
-      print("this is the predicted shape:", predicted.shape)
-      dim=batch_s * num_sens
-     
-      predicted = predicted * tf.ones((1,num_sens))
-      predicted=tf.reshape(predicted,[dim])
-      predicted = tf.math.abs(predicted)
-      print("this is the predicted after reshape", predicted.shape)
-      #snrs_tf = tf.slice(snrs,[0,0,0],dim)
-      snrs_tf = tf.reshape(snrs , [dim])
-      snrs_tf = tf.math.abs(snrs_tf)
-      print("this is snrs after reshape", snrs_tf.shape)
-      tf.debugging.assert_non_negative(snrs_tf, message="there is a negative value in the tensor snrs_tf")
-      C = tf.linalg.tensor_diag(1+2*snrs_tf)
-      C =tf.math.abs(C)
-      C_inv = tf.linalg.inv(C)
-      C_inv =tf.math.abs(C_inv)
-      zero_tensor = tf.zeros((dim,dim))
-      epsilon = 0.05# to avoid the division by 0 
-      epsilon_tensor = tf.fill((dim, dim), epsilon)
-      tf.debugging.assert_none_equal(epsilon_tensor, zero_tensor, message="there is a null value here in epsilon tensor")
-      exp1 = tf.math.multiply(predicted,tf.norm(tf.math.multiply(C_inv,snrs_tf), ord=1, axis=None))-tf.math.multiply(tf.math.multiply(fs*(T_cte - num_sens*tr),tf.keras.backend.transpose(snrs_tf)),tf.keras.backend.transpose(C_inv)) 
-      exp2 = tf.linalg.norm(C*snrs_tf, ord=1)* math.sqrt(2*fs*(T_cte - num_sens*tr))
-      exp3 = fs*(T_cte - num_sens*tr)*tf.keras.backend.transpose(snrs_tf)*tf.keras.backend.transpose(C_inv)- predicted*tf.linalg.norm(C_inv*snrs_tf, ord=1)
-      ext = tf.math.sqrt((tf.keras.backend.transpose(snrs_tf)+epsilon_tensor)*(tf.keras.backend.transpose(C_inv)+epsilon_tensor)*snrs_tf) 
-      exp4 = math.sqrt(2*fs*(T_cte - num_sens*tr))* ext  
-      test = tf.keras.backend.transpose(C_inv)+epsilon_tensor
-      tf.debugging.assert_none_equal(test, zero_tensor, message="there is a null value here in test tensor")
-      tf.debugging.assert_non_negative(tf.keras.backend.transpose(snrs_tf), message="there is a negative value in the tf.keras.backend.transpose(snrs_tf)")
-      tf.debugging.assert_non_negative(tf.keras.backend.transpose(C_inv), message="there is a negative value in the tf.keras.backend.transpose(C_inv)")
-      tf.debugging.assert_non_negative(snrs_tf, message="there is a negative value in the snrs_tf")
-      tf.debugging.assert_non_negative(ext, message="there is a negative value in the ext")
-      tf.debugging.assert_non_negative(exp4, message="there is a negative value in the tensor")      
-      tf.debugging.assert_none_equal(snrs_tf, zero_tensor, message="there is a null value here in snrs_tf")
-      #tf.debugging.assert_none_equal(tf.keras.backend.transpose(C_inv), zero_tensor, message="there is a null value here in transpose of C_inv")
-      tf.debugging.assert_none_equal(exp4, zero_tensor, message="there is a null value here in exp4")
-      p_0 = tf.math.multiply(pi_0,cls.Q(exp1/exp2))
-      p_1 = tf.math.multiply(pi_1,cls.Q(exp3/exp4)) 
-      loss = p_0 + p_1
-     
-      return loss / batch_s
+        global batch_id
+        dim=batch_s * num_sens
+        gain= gain[0:batch_id,:]
+        gain= tf.cast(gain, tf.float32)
+        gain_bis = tf.reshape(gain,[dim])
+        
+        def loss_fn_P2(snrs: np.ndarray, predicted) -> float:
+          dim=batch_s * num_sens
+          lent = batch_s * num_sens
+          index = 0
+          count = 0
+          predicted_bis = predicted * tf.ones((1,num_sens))
+          predicted_bis=tf.reshape(predicted_bis,[dim])
+          snrs_tf_bis = tf.reshape(snrs , [dim])
+          snrs_tf_bis = tf.math.abs(snrs_tf_bis)
+          loss_values = list()
+          i = 0
+          while count < lent:      
+              snrs_tf = tf.slice(snrs_tf_bis,[index],[index+num_sens])
+              predicted = tf.slice(predicted_bis,[index],[index+num_sens])
+              gain = tf.slice(gain_bis,[index],[index+num_sens])
+              count = count + num_sens
+              
+              tf.debugging.assert_non_negative(snrs_tf, message="there is a negative value in the tensor snrs_tf")
+              C = tf.linalg.tensor_diag(1+2*snrs_tf)
+              #C =tf.math.abs(C)
+              C_inv = tf.linalg.inv(C)
+              #C_inv =tf.math.abs(C_inv)
+              snrs_tf=tf.reshape(snrs_tf,[num_sens,1])
+              predicted=tf.reshape(predicted,[1,num_sens])
+
+              exp1 = predicted*tf.norm(tf.linalg.matmul(C_inv,snrs_tf), ord=1, axis=None)-tf.linalg.matmul(tf.linalg.matmul(fs*(T_cte - num_sens*tr)*snrs_tf,C_inv,transpose_a=True,transpose_b=True),tf.ones([num_sens,1]))
+              exp2 = tf.norm(tf.linalg.matmul(C,snrs_tf), ord=1)* math.sqrt(2*fs*(T_cte - num_sens*tr))
+              p_0 = pi_0*cls.Q(exp1/exp2)
+              
+              exp3 = fs*(T_cte - num_sens*tr)*tf.linalg.matmul(snrs_tf,tf.keras.backend.transpose(C_inv),transpose_a=True)*(0.3*gain+tf.ones((num_sens,)))- predicted*tf.linalg.norm(C_inv*snrs_tf, ord=1)
+              ext = tf.math.sqrt(tf.linalg.matmul(tf.linalg.matmul(snrs_tf,tf.keras.backend.transpose(C_inv),transpose_a=True),snrs_tf)) 
+              exp4 = math.sqrt(2*fs*(T_cte - num_sens*tr))* ext
+              
+              p_1 = pi_1*cls.Q(exp3/exp4)
+              loss=p_0+p_1
+              loss_values.append(loss) 
+          return tf.reduce_mean(loss_values)
+        return loss_fn_P2
   
     @staticmethod  
     def Q(x):
@@ -94,91 +85,50 @@ class DNNModelP2(DNNModel):
         """   
         model, initializer = init_model()
         
+        
         if choice == "dropout":            
-                model.add(Dense(num_sens, kernel_initializer=initializer))
+                model.add(Dense(num_sens, kernel_initializer=initializer, kernel_regularizer=regularizers.l1(0.003)))
+                model.add(LeakyReLU(alpha=0.05))
+                model.add(layers.Dropout(0.4))
+                model.add(BatchNormalization())
+                model.add(Dense(6, kernel_initializer=initializer, kernel_regularizer=regularizers.l1(0.003)))
                 model.add(LeakyReLU(alpha=0.005))
-                model.add(layers.Dropout(0.3))
-                #model.add(BatchNormalization())
-                model.add(Dense(64))
+                model.add(layers.Dropout(0.4))
+                model.add(BatchNormalization())
+                model.add(Dense(6, kernel_initializer=initializer, kernel_regularizer=regularizers.l1(0.003)))
                 model.add(LeakyReLU(alpha=0.005))
-                model.add(layers.Dropout(0.3))
-                #model.add(BatchNormalization())
-                model.add(Dense(32))
+                model.add(layers.Dropout(0.4))
+                model.add(BatchNormalization())
+                model.add(Dense(6, kernel_initializer=initializer, kernel_regularizer=regularizers.l1(0.003)))
                 model.add(LeakyReLU(alpha=0.005))
-                model.add(layers.Dropout(0.3))
-                #model.add(BatchNormalization())
-                model.add(Dense(16))
-                model.add(LeakyReLU(alpha=0.005))
-                
-                model.add(layers.Dropout(0.3))
-                #model.add(BatchNormalization())
-                model.add(Dense(1, name='last_layer'))
-                model.add(LeakyReLU(alpha=0.005))
-                
+                model.add(layers.Dropout(0.4))
+                model.add(BatchNormalization())
+                model.add(Dense(1, name='last_layer', kernel_initializer=initializer, kernel_regularizer=regularizers.l1(0.003),activation='softplus'))
+                #model.add(LeakyReLU(alpha=0.005))
                 model._name = 'dropout'
                 
-        if choice == "dropout_Rl1":           
-                model.add(Dense(num_sens, activation='relu', kernel_initializer=initializer))
-                model.add(LeakyReLU(alpha=0.01))
-                #model.add(layers.Dropout(0.2))
-                #model.add(BatchNormalization())
-                model.add(Dense(64))
-                model.add(LeakyReLU(alpha=0.01))
-                #model.add(layers.Dropout(0.2))
-                #model.add(BatchNormalization())
-                model.add(Dense(32))
-                model.add(LeakyReLU(alpha=0.01))
-                #model.add(layers.Dropout(0.2))
-                #model.add(BatchNormalization())
-                model.add(Dense(16))
-                model.add(LeakyReLU(alpha=0.01))
-                
-                #model.add(layers.Dropout(0.2))
-                #model.add(BatchNormalization())
-                model.add(Dense(1,name='last_layer'))
-                model.add(LeakyReLU(alpha=0.01))
-                model._name = 'dropout'
-                model._name = 'Standard'
-     
-        if choice == "dropout_Rl2":           
-                model.add(Dense(num_sens,activation='relu', kernel_initializer=initializer))
-                #model.add(LeakyReLU(alpha=0.005))
-                model.add(layers.Dropout(0.1))
-                #model.add(BatchNormalization())
-                model.add(Dense(64, activation='relu', kernel_regularizer=regularizers.l2(0.0005)))
-                #model.add(LeakyReLU(alpha=0.005))
-                model.add(layers.Dropout(0.1))
-                #model.add(BatchNormalization())
-                model.add(Dense(32,activation='relu', kernel_regularizer=regularizers.l2(0.0005)))
-                #model.add(LeakyReLU(alpha=0.005))
-                model.add(layers.Dropout(0.1))
-                #model.add(BatchNormalization())
-                model.add(Dense(16,activation='relu',kernel_regularizer=regularizers.l2(0.0005)))
-                #model.add(LeakyReLU(alpha=0.005))
-                model.add(layers.Dropout(0.1))
-                #model.add(BatchNormalization())
-                model.add(Dense(1, activation='relu',name='last_layer'))
-                model._name = 'Dropout_Model_Rl2'            
-                
-        if choice == "linear":           
+        return model
+
+
+        if choice == "dropout1":            
                 model.add(Dense(num_sens, kernel_initializer=initializer))
-                model.add(LeakyReLU(alpha=0.01))
-                model.add(layers.Dropout(0.2))
+                model.add(LeakyReLU(alpha=0.05))
+                model.add(layers.Dropout(0.3))
                 model.add(BatchNormalization())
-                model.add(Dense(64))
-                model.add(LeakyReLU(alpha=0.01))
-                model.add(layers.Dropout(0.2))
+                model.add(Dense(64, kernel_initializer=initializer))
+                model.add(LeakyReLU(alpha=0.005))
+                model.add(layers.Dropout(0.3))
                 model.add(BatchNormalization())
-                model.add(Dense(32))
-                model.add(LeakyReLU(alpha=0.01))
-                model.add(layers.Dropout(0.2))
+                model.add(Dense(32, kernel_initializer=initializer))
+                model.add(LeakyReLU(alpha=0.005))
+                model.add(layers.Dropout(0.3))
                 model.add(BatchNormalization())
-                model.add(Dense(16))
-                model.add(LeakyReLU(alpha=0.01))
-                model.add(layers.Dropout(0.2))
+                model.add(Dense(16, kernel_initializer=initializer))
+                model.add(LeakyReLU(alpha=0.005))
+                model.add(layers.Dropout(0.3))
                 model.add(BatchNormalization())
-                model.add(Dense(num_sens, activation='linear',
-                                name='last_layer'))
-                model._name = 'Linear_Model'              
+                model.add(Dense(1, name='last_layer', kernel_initializer=initializer,activation='softplus'))
+                #model.add(LeakyReLU(alpha=0.005))
+                model._name = 'dropout'  
                 
-        return model    
+        return model 

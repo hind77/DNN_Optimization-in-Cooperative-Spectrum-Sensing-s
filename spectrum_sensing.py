@@ -13,6 +13,7 @@ from mathematical_model import MathematicalModel
 import scipy.spatial.distance
 import matplotlib.pyplot as plt
 from texttable import Texttable
+from memory_profiler import profile
 
 class SpectrumSensing:
     
@@ -71,11 +72,21 @@ class SpectrumSensing:
       cooperative_static = list()   
       for k,v in static.items():
           
-          cooperative_static.append(weights[k]*v)    
+          cooperative_static.append(weights[k]*v) 
+          
       return int(sum(cooperative_static)> thresh)
   
     
-      def get_cooperatieve_pd(self, cooperative_decisions)-> np.ndarray:        
+      def get_cooperatieve_pd(self, cooperative_decisions)-> np.ndarray:
+        '''
+        Function to return a dictionary that representes each user with its signal
+        
+          Parameters: 
+              secondaru users snrs
+          Outputs:
+              users snrs dictionary 
+        
+        '''   
         return sum(cooperative_decisions)/rounds
      
       
@@ -122,48 +133,63 @@ class SpectrumSensing:
                     ['mathematical_coef',math_coef]])
         print(table.draw())
      
-        
-    def generate_weights(self,model, snrs_test,
-                       signal_power) -> np.ndarray :
+    
+    def generate_dnn_weights(self,model, snrs_test) -> np.ndarray :
         
       '''
         Function to returns different weights (dnn/numerical/mathematical)
         
       '''      
         
-      for k in range(0,rounds):#Number of Monte Carlo Simulations 
-            print("\n")
-            print("******** Results for Round {} ********".format(k))
+      for k in range(0,1):#Number of Monte Carlo Simulations 
+            #print("\n")
+            #print("******** Results for Round {} ********".format(k))
     
             weights = model.predict(snrs_test)
             dnn_weights = weights[k]
-            numerical_weights = MathematicalModel.compute_weights_using_deflection_coef(snrs_test[k])
-            maths_weights_2007 = MathematicalModel.old_paper_mathematical_weights(snrs_test[k])
-            maths_weights_2016 = MathematicalModel.new_paper_mathematical_weights(snrs_test[k])
+            #numerical_weights = MathematicalModel.compute_weights_using_deflection_coef(snrs_test[k])
+            #maths_weights_2007 = MathematicalModel.old_paper_mathematical_weights(snrs_test[k])
+            #maths_weights_2016 = MathematicalModel.new_paper_mathematical_weights(snrs_test[k])
             
-            # print("dnn weights", dnn_weights)        
-            # print("numerical weights", numerical_weights)        
-            # print("mathematical weights", maths_weights_2007)
-            DNN_dm_square = MathematicalModel.compute_deflection_coef(dnn_weights,
-                                                    snrs_test[k])
-            mathematical_dm_square_2007 = MathematicalModel.compute_deflection_coef(maths_weights_2007, 
-                                                             snrs_test[k])
-            mathematical_dm_square_2016 = MathematicalModel.compute_deflection_coef(maths_weights_2016, 
-                                                             snrs_test[k])            
-            numerical_dm_square = MathematicalModel.compute_deflection_coef(numerical_weights,
-                                                                            snrs_test[k])
+            #print("dnn weights", dnn_weights)        
+            #print("numerical weights", numerical_weights)        
+            #print("mathematical weights", maths_weights_2016)
+            #DNN_dm_square = MathematicalModel.compute_deflection_coef(dnn_weights,
+                                                    #snrs_test[k])
+            #mathematical_dm_square_2007 = MathematicalModel.compute_deflection_coef(maths_weights_2007, 
+                                                             #snrs_test[k])
+            #mathematical_dm_square_2016 = MathematicalModel.compute_deflection_coef(maths_weights_2016, 
+                                                             #snrs_test[k])            
+            #numerical_dm_square = MathematicalModel.compute_deflection_coef(numerical_weights,
+                                                                            #snrs_test[k])
             
             #self.benshmarking_table(DNN_dm_square, mathematical_dm_square, numerical_dm_square)
-            print("DNN deflection coef",DNN_dm_square)
-            print("numerical deflection coef",numerical_dm_square)
-            print("mathematical deflection coef",mathematical_dm_square_2007)
-            print("mathematical deflection coef",mathematical_dm_square_2016)
-     
+            #print("DNN deflection coef", DNN_dm_square)
+            #print("numerical deflection coef",numerical_dm_square)
+            #print("mathematical deflection coef",mathematical_dm_square_2007)
+            #print("mathematical deflection coef",mathematical_dm_square_2016)
+            #print("these are the dnn weights", dnn_weights)
+      
+    def generate_numerical_weights(self, snrs_test)-> np.ndarray:        
+        for i in range(0,snrs_test.shape[0]):
+            numerical_weights = MathematicalModel.compute_weights_using_deflection_coef(snrs_test[i])
+            #print(numerical_weights)
             
+            
+    def generate_mathematical_weights(self, snrs_test, signal_power)-> np.ndarray:
+        
+            for i in range(0,snrs_test.shape[0]):
+                maths_weights_2016 = MathematicalModel.new_paper_mathematical_weights(snrs_test[i])           
+            
+            
+        
+        
+     
+    @profile         
     def generate_thresholds(self, snrs_test, model_d) -> np.ndarray :
-        thresholds_d = model_d.predict(snrs_test)
-        dnn_thresholds_d = thresholds_d[0]
-
-        numerical_thresholds = MathematicalModel.compute_numerical_thresholds(snrs_test[0])
-        print("DNN thresholds for dropeout model ",dnn_thresholds_d)
-        print("numerical thresholds",numerical_thresholds)        
+        #thresholds_d = model_d.predict(snrs_test)
+        #dnn_thresholds_d = thresholds_d[0]
+        for i in range(0,snrs_test.shape[0]):
+            numerical_thresholds = MathematicalModel.compute_numerical_thresholds(snrs_test[i])
+        #print("DNN thresholds for dropeout model ",dnn_thresholds_d)
+        #print("numerical thresholds",numerical_thresholds)        

@@ -27,8 +27,9 @@ sigma_v = 1 # noice variance
 
 
 batch_s = 64
+batch_id = batch_s
 num_sens = 10 
-samples_factor = 100
+samples_factor = 10
 num_samples = batch_s*samples_factor
 
 sen_loc = size_area*(np.random.rand(num_sens, 2)-0.5)
@@ -39,7 +40,7 @@ pd = np.arange(0, 1, 0.05)# probability of detection
 val = 1-2*pf
 thresh = ((math.sqrt(2)*sp.erfinv(val))/ math.sqrt(num_samples))+1
 
-rounds = 10
+rounds = 100
 
 n=50
 

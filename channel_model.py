@@ -106,6 +106,7 @@ class ChannelModel:
     
       returned_power = []
       returned_SNRs = []
+      returned_gain = []
       
       
       for i in range(num_samples):
@@ -125,8 +126,9 @@ class ChannelModel:
         pu_power = pu_power * multi_fading
         returned_power.append(pu_power)
         returned_SNRs.append(SNR)
+        returned_gain.append(pu_ch_gain_tot)
       output = dict()
       output['snrs'] = returned_SNRs
-      output['power'] = returned_power
+      output['gain'] = returned_gain
     
       return output

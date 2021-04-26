@@ -27,7 +27,7 @@ class DNNModel:
         """
         model = Sequential()
         model.add(BatchNormalization(input_shape=(num_sens,)))
-        initializer = tf.keras.initializers.GlorotUniform(seed=(1))
+        initializer = tf.keras.initializers.GlorotUniform()
         return model, initializer     
 
 
@@ -51,10 +51,10 @@ class DNNModel:
         
         """
         history = []
-        opt = tf.keras.optimizers.Adam(learning_rate=0.0001)
+        opt = tf.keras.optimizers.Adam(learning_rate=1e-4)
         callback = tf.keras.callbacks.EarlyStopping(monitor='loss', patience=50) 
         model.compile(loss = loss_fn , optimizer=opt, metrics=['acc'])
-        history = model.fit(X_train,y_train,batch_size=batch_s,epochs=20,
+        history = model.fit(X_train,y_train,batch_size=batch_s,epochs=50,
                             validation_data=(X_val,y_val),
                             callbacks=[callback])
         return history
@@ -139,8 +139,8 @@ class DNNModel:
         plt.ylabel(metric_label)
         plt.title('Comparing ' + metric_label + ' between models for '+ problem_id)
         plt.legend()
-        #plt.show()
-        plt.savefig('Comparing ' + metric_label + ' between models'+ ' for the problem '+ problem_id +'.pdf')
+        plt.show()
+        #plt.savefig('Comparing ' + metric_label + ' between models'+ ' for the problem '+ problem_id +'.pdf')
         plt.close()
         
     

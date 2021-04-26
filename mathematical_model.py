@@ -175,9 +175,7 @@ class MathematicalModel:
               numerical optimal thresholds
         '''
         bnds = ((0, 1),)  
-        #random_guess = np.random.dirichlet(np.ones(10)*1000.,size=1)
         random_guess = random.choice(snrs)
-        #random_guess = tuple(list(random_guess[0])) 
         constraint = ({'type': 'ineq', 'fun': lambda x:  x>0})
         res = minimize(cls.func, random_guess,args=(snrs), method='SLSQP', bounds=bnds, constraints=constraint)
         return res.x 
@@ -187,17 +185,6 @@ class MathematicalModel:
     def real(w1):
         return w1.real
     
+
     
-    @staticmethod
-    def convert(lst): 
-        return [[el] for el in lst]
-    
-    
-    @staticmethod
-    def sum_s(snrs, *x):            
-        return sum(x, snrs)**2
-    
-    @staticmethod
-    def mul(snrs, *x): 
-        x= [s**2 for s in x] 
-        return (4*snrs)*(x)     
+ 
